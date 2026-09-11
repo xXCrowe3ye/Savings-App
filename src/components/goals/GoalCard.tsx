@@ -27,7 +27,7 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ goal, onOpenBoost }: GoalCardProps) {
-  const { currency, toggleGoalRoundup } = useApp();
+  const { currency, toggleGoalRoundup, partnerAName, partnerBName } = useApp();
   const [isTogglingRoundup, setIsTogglingRoundup] = useState(false);
 
   const progress = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
@@ -118,10 +118,10 @@ export function GoalCard({ goal, onOpenBoost }: GoalCardProps) {
         <div className="mt-3 p-2.5 rounded-2xl bg-secondary/50 border border-border/60">
           <div className="flex justify-between text-[11px] font-semibold mb-1">
             <span className="text-indigo-600 dark:text-indigo-400">
-              Alex: {formatMoney(goal.partnerAContribution, currency)} ({partnerARatio}%)
+              {partnerAName}: {formatMoney(goal.partnerAContribution, currency)} ({partnerARatio}%)
             </span>
             <span className="text-teal-600 dark:text-teal-400">
-              Sam: {formatMoney(goal.partnerBContribution, currency)} ({partnerBRatio}%)
+              {partnerBName}: {formatMoney(goal.partnerBContribution, currency)} ({partnerBRatio}%)
             </span>
           </div>
           <div className="w-full h-1.5 bg-background rounded-full overflow-hidden flex">

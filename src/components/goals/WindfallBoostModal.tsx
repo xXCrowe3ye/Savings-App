@@ -13,7 +13,7 @@ interface WindfallBoostModalProps {
 }
 
 export function WindfallBoostModal({ goal, isOpen, onClose }: WindfallBoostModalProps) {
-  const { currency, boostGoal } = useApp();
+  const { currency, boostGoal, partnerAName, partnerBName } = useApp();
   const [amount, setAmount] = useState("100");
   const [partnerKey, setPartnerKey] = useState<PartnerKey | "both">("both");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,69 +43,67 @@ export function WindfallBoostModal({ goal, isOpen, onClose }: WindfallBoostModal
             </div>
             <div>
               <h3 className="font-bold text-sm">Windfall Boost</h3>
-              <p className="text-[11px] text-muted-foreground truncate max-w-[200px]">
-                {goal.emoji} {goal.title}
-              </p>
+              <p className="text-xs text-muted-foreground">{goal.title}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground"
+            className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Quick Pills */}
-        <div className="mt-4">
-          <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
-            Quick Amount
-          </label>
-          <div className="grid grid-cols-4 gap-2">
-            {quickAmounts.map((q) => (
-              <button
-                type="button"
-                key={q}
-                onClick={() => setAmount(q.toString())}
-                className={`py-2 rounded-xl border text-xs font-bold transition-all ${
-                  amount === q.toString()
-                    ? "bg-primary text-white border-primary shadow-xs"
-                    : "bg-secondary/40 hover:bg-secondary text-foreground"
-                }`}
-              >
-                +{CURRENCIES[currency]?.symbol}{q}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <form onSubmit={handleBoost} className="mt-4 space-y-3.5">
+        <form onSubmit={handleBoost} className="mt-4 space-y-4">
+          {/* Quick Amount Chips */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Custom Amount ({CURRENCIES[currency]?.symbol})
+            <label className="text-xs font-semibold text-muted-foreground block mb-2">
+              Select or Enter Boost Amount
             </label>
-            <input
-              type="number"
-              step="1"
-              required
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-3 py-2 text-base font-bold bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/40"
-            />
+            <div className="grid grid-cols-4 gap-2 mb-2">
+              {quickAmounts.map((q) => (
+                <button
+                  type="button"
+                  key={q}
+                  onClick={() => setAmount(q.toString())}
+                  className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                    amount === q.toString()
+                      ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                      : "bg-secondary hover:bg-secondary/80 text-foreground"
+                  }`}
+                >
+                  {formatMoney(q, currency)}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-muted-foreground text-sm">
+                {CURRENCIES[currency]?.symbol}
+              </span>
+              <input
+                type="number"
+                step="0.01"
+                required
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full pl-8 pr-3 py-2.5 text-base font-bold bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
           </div>
 
-          {/* Contribution Attribution */}
+          {/* Partner Contribution Assignment */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
-              Funded By
+            <label className="text-xs font-semibold text-muted-foreground block mb-2">
+              Credit Boost Towards
             </label>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setPartnerKey("both")}
                 className={`py-2 px-1 text-xs font-semibold rounded-xl border transition-all ${
                   partnerKey === "both"
-                    ? "bg-foreground text-background border-foreground font-bold shadow-xs"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
                     : "bg-secondary/40 hover:bg-secondary text-foreground"
                 }`}
               >
@@ -120,7 +118,7 @@ export function WindfallBoostModal({ goal, isOpen, onClose }: WindfallBoostModal
                     : "bg-secondary/40 hover:bg-secondary text-foreground"
                 }`}
               >
-                Alex Only
+                {partnerAName} Only
               </button>
               <button
                 type="button"
@@ -131,7 +129,7 @@ export function WindfallBoostModal({ goal, isOpen, onClose }: WindfallBoostModal
                     : "bg-secondary/40 hover:bg-secondary text-foreground"
                 }`}
               >
-                Sam Only
+                {partnerBName} Only
               </button>
             </div>
           </div>

@@ -6,7 +6,7 @@ import { formatMoney } from "@/lib/utils";
 import { AlertTriangle, Check, ShieldAlert } from "lucide-react";
 
 export function ApprovalBanner() {
-  const { transactions, currentUser, approveTransaction, currency } = useApp();
+  const { transactions, currentUser, approveTransaction, currency, getPartnerName } = useApp();
 
   // Find expenses >= $200 needing approval
   const pendingApprovals = transactions.filter(
@@ -18,7 +18,7 @@ export function ApprovalBanner() {
   return (
     <div className="space-y-2">
       {pendingApprovals.map((tx) => {
-        const partnerName = tx.paidBy === "partner_a" ? "Alex" : "Sam";
+        const partnerName = getPartnerName(tx.paidBy);
         const isMyExpense = tx.paidBy === currentUser.partnerKey;
 
         return (

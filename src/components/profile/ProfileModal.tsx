@@ -70,6 +70,11 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     }
   };
 
+  const isNewProfile =
+    !currentUser.nickname ||
+    currentUser.nickname === "Partner A" ||
+    currentUser.nickname === "Partner B";
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
       <div className="w-full sm:max-w-md bg-card border rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 max-h-[92vh] overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
@@ -80,8 +85,10 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-base">Personalize Profile</h3>
-              <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+              <h3 className="font-bold text-base">
+                {isNewProfile ? "Welcome! Setup Your Profile" : "Personalize Profile"}
+              </h3>
+              <p className="text-xs text-muted-foreground">{currentUser.email || "Babi-Savings Partner"}</p>
             </div>
           </div>
           <button
@@ -91,6 +98,18 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {isNewProfile && (
+          <div className="mt-3 p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary text-xs flex items-start space-x-2 animate-in fade-in">
+            <Sparkles className="w-4 h-4 shrink-0 mt-0.5" />
+            <div>
+              <b className="font-semibold">First-Time Setup:</b>
+              <p className="text-[11px] mt-0.5 opacity-90">
+                Please enter your nickname, upload a photo, and pick your color so you and your partner can easily identify each other&apos;s contributions.
+              </p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSave} className="mt-4 space-y-4">
           {/* Avatar Photo Section */}

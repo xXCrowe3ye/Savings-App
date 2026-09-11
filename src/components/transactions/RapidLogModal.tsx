@@ -33,7 +33,7 @@ const CATEGORIES = [
 ];
 
 export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
-  const { currentUser, currency, logTransaction, goals } = useApp();
+  const { currentUser, currency, logTransaction, goals, partnerAName, partnerBName } = useApp();
 
   // Mode: Expense vs Savings
   const [entryType, setEntryType] = useState<TransactionType>("expense");
@@ -341,7 +341,7 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
                     : "bg-background border-border hover:bg-secondary"
                 }`}
               >
-                <span>Hanz</span>
+                <span>{partnerAName}</span>
                 {paidBy === "partner_a" && <Check className="w-3.5 h-3.5" />}
               </button>
               <button
@@ -353,7 +353,7 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
                     : "bg-background border-border hover:bg-secondary"
                 }`}
               >
-                <span>Julia</span>
+                <span>{partnerBName}</span>
                 {paidBy === "partner_b" && <Check className="w-3.5 h-3.5" />}
               </button>
             </div>

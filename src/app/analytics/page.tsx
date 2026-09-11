@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 export default function AnalyticsPage() {
-  const { metrics, currency, transactions, recurring, budgets } = useApp();
+  const { metrics, currency, transactions, recurring, budgets, partnerAName, partnerBName } = useApp();
   const [isExporting, setIsExporting] = useState(false);
 
   const income = metrics?.combinedTotalIncome || 7800;
@@ -113,10 +113,10 @@ export default function AnalyticsPage() {
 
           <div className="flex justify-between text-xs font-semibold">
             <span className="text-indigo-600 dark:text-indigo-400">
-              Alex: {formatMoney(partnerASpent, currency)} ({ratioA}%)
+              {partnerAName}: {formatMoney(partnerASpent, currency)} ({ratioA}%)
             </span>
             <span className="text-teal-600 dark:text-teal-400">
-              Sam: {formatMoney(partnerBSpent, currency)} ({ratioB}%)
+              {partnerBName}: {formatMoney(partnerBSpent, currency)} ({ratioB}%)
             </span>
           </div>
         </div>

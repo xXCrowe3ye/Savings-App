@@ -11,7 +11,7 @@ interface BillCalendarViewProps {
 }
 
 export function BillCalendarView({ bills }: BillCalendarViewProps) {
-  const { currency } = useApp();
+  const { currency, getPartnerName } = useApp();
   const todayDate = new Date().getDate();
   const [selectedDay, setSelectedDay] = useState<number>(todayDate);
 
@@ -85,7 +85,7 @@ export function BillCalendarView({ bills }: BillCalendarViewProps) {
                 <div>
                   <span className="font-bold text-foreground">{b.title}</span>
                   <span className="text-muted-foreground ml-2">
-                    ({b.paidBy === "partner_a" ? "Alex" : "Sam"})
+                    ({getPartnerName(b.paidBy)})
                   </span>
                 </div>
                 <span className="font-bold">{formatMoney(b.amount, currency)}</span>

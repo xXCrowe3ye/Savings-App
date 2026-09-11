@@ -16,7 +16,11 @@ import { queueOfflineTransaction, syncOfflineTransactions, getQueuedTransactions
 
 interface AppContextType {
   currentUser: UserProfile;
-  setCurrentUser: (user: UserProfile) => void;
+  partnerUser: UserProfile | null;
+  partnerAName: string;
+  partnerBName: string;
+  getPartnerName: (partnerKey: PartnerKey) => string;
+  setCurrentUser: React.Dispatch<React.SetStateAction<UserProfile>>;
   isAuthenticated: boolean;
   currency: CurrencyCode;
   setCurrency: (currency: CurrencyCode) => void;
@@ -48,8 +52,8 @@ interface AppContextType {
 const DEFAULT_USER_A: UserProfile = {
   id: "user_a",
   partnerKey: "partner_a",
-  name: "Partner",
-  nickname: "Partner",
+  name: "Partner A",
+  nickname: "Partner A",
   email: "",
   themeAccent: "#6366f1",
   hasPin: false,
@@ -59,6 +63,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserProfile>(DEFAULT_USER_A);
+  const [partnerUser, setPartnerUser] = useState<UserProfile | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [currency, setCurrencyState] = useState<CurrencyCode>("USD");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -74,6 +79,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const openProfile = () => setIsProfileOpen(true);
   const closeProfile = () => setIsProfileOpen(false);
+
+  const partnerAName =
+    currentUser.partnerKey === "partner_a"
+      ? currentUser.nickname || currentUser.name || "Partner A"
+      : partnerUser?.nickname || partnerUser?.name || "Partner A";
+
+  const partnerBName =
+    currentUser.partnerKey === "partner_b"
+      ? currentUser.nickname || currentUser.name || "Partner B"
+      : partnerUser?.nickname || partnerUser?.name || "Partner B";
+
+  const getPartnerName = (partnerKey: PartnerKey): string => {
+    return partnerKey === "partner_a" ? partnerAName : partnerBName;
+  };
 
   const setCurrency = (c: CurrencyCode) => {
     setCurrencyState(c);
@@ -107,6 +126,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setIsAuthenticated(meData.authenticated);
         if (meData.user) {
           setCurrentUser(meData.user);
+        }
+        if (meData.partner) {
+          setPartnerUser(meData.partner);
+        }
+        // First login onboarding prompt: if user hasn't configured their nickname
+        if (meData.authenticated && meData.isFirstTime) {
+          setIsProfileOpen(true);
         }
       }
 
@@ -352,6 +378,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider
       value={{
         currentUser,
+        partnerUser,
+        partnerAName,
+        partnerBName,
+        getPartnerName,
         setCurrentUser,
         isAuthenticated,
         currency,

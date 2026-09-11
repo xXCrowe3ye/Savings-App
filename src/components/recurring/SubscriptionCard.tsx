@@ -34,11 +34,11 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 export function SubscriptionCard({ bill }: SubscriptionCardProps) {
-  const { currency } = useApp();
+  const { currency, getPartnerName } = useApp();
 
   const Icon = CATEGORY_ICONS[bill.category] || Calendar;
   const isPartnerA = bill.paidBy === "partner_a";
-  const partnerName = isPartnerA ? "Alex" : "Sam";
+  const partnerName = getPartnerName(bill.paidBy);
 
   return (
     <div className="bg-card border rounded-2xl p-4 shadow-xs space-y-2">

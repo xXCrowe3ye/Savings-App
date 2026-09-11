@@ -38,14 +38,14 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 export function TransactionItem({ transaction }: TransactionItemProps) {
-  const { currency, updateTransactionNotes, currentUser, refreshData } = useApp();
+  const { currency, updateTransactionNotes, getPartnerName, refreshData } = useApp();
   const [isExpanded, setIsExpanded] = useState(false);
   const [newNote, setNewNote] = useState(transaction.notes || "");
   const [isSavingNote, setIsSavingNote] = useState(false);
 
   const Icon = CATEGORY_ICONS[transaction.category] || Tag;
   const isPartnerA = transaction.paidBy === "partner_a";
-  const partnerName = isPartnerA ? "Alex" : "Sam";
+  const partnerName = getPartnerName(transaction.paidBy);
 
   const handleSaveNote = async () => {
     setIsSavingNote(true);
