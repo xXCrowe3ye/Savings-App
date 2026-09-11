@@ -1,4 +1,4 @@
-# 🕊️ DuoNest — Shared Couples Finance & Budgeting Platform
+# 🕊️ Babi-Savings — Shared Couples Finance & Budgeting Platform
 
 > An advanced, mobile-first web application designed specifically for couples to manage joint finances, category budgets, recurring subscriptions, and shared savings goals using Google Sheets API v4 as a headless database, deployed on Vercel.
 
@@ -8,106 +8,108 @@
 
 - **Framework**: Next.js 15 (App Router, React 19, TypeScript).
 - **Headless Database**: Google Sheets API v4 via `googleapis` with server-side proxy isolation.
-- **Dual-Backend Provider**: Seamlessly boots in local/demo mode with seeded realistic data when Google credentials are not set, and automatically connects to live Google Sheets once credentials are provided in `.env.local` or Vercel.
+- **Dual-Backend Provider**: Seamlessly boots with Google Sheets or fallback store, automatically creating required tabs and headers.
 - **Formula Injection Defense**: Strips and escapes dangerous formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`) before persisting to Google Sheets.
 - **Receipt Attachments**: Direct proxy to Google Drive API with automatic share permissions and thumbnail generation.
 - **PWA & Offline Capability**: Service worker caching and IndexedDB offline transaction queue that auto-syncs when reconnecting.
-- **Security**: `HttpOnly`, `SameSite=Strict`, `Secure` JWT session cookies, `bcryptjs` credential hashing, and 15-minute PIN unlock security gate.
-- **Couple Collaboration**: Partner A ("Alex") vs Partner B ("Sam") active profile switching, large expense approval badges (> $200), shared transaction comment threads, and automatic IOU balance calculation for non-50/50 splits.
+- **Security**: `HttpOnly`, `SameSite=Strict`, `Secure` JWT session cookies, authorized Google SSO restriction, and 15-minute PIN unlock security gate.
+- **Couple Collaboration**: Dedicated partner profile customization, large expense approval badges (>= $200), savings deposits, and automatic IOU balance calculation for non-50/50 splits.
 
 ---
 
 ## 📊 Complete Google Sheets Database Schema
 
-Create a new Google Spreadsheet and share it with your Service Account Email with **Editor** permissions. DuoNest automatically verifies and seeds the header rows across these 6 tabs:
+Create a new Google Spreadsheet and share it with your Service Account Email with **Editor** permissions. Babi-Savings automatically verifies and seeds the header rows across these 6 tabs:
 
 ### 1. Tab: `Users`
-| Header | Type | Description | Sample Data |
-|---|---|---|---|
-| `id` | string | Unique user identifier | `user_a` |
-| `partnerKey` | string | `partner_a` or `partner_b` | `partner_a` |
-| `name` | string | Display name | `Alex Vance` |
-| `email` | string | Email address | `alex@duonest.local` |
-| `passwordHash` | string | bcrypt password hash | `$2a$10$...` |
-| `pinHash` | string | bcrypt PIN hash | `$2a$10$...` |
-| `themeAccent` | string | Hex color | `#6366f1` |
-| `createdAt` | ISO string | Timestamp | `2026-01-01T00:00:00.000Z` |
+| Header | Type | Description |
+|---|---|---|
+| `id` | string | Unique user identifier |
+| `partnerKey` | string | `partner_a` or `partner_b` |
+| `name` | string | Display name |
+| `email` | string | Email address |
+| `themeAccent` | string | Hex color |
+| `nickname` | string | Custom nickname |
+| `avatarUrl` | string | Profile photo URL |
+| `createdAt` | ISO string | Timestamp |
 
 ### 2. Tab: `Transactions`
-| Header | Type | Description | Sample Data |
-|---|---|---|---|
-| `id` | string | Unique transaction ID | `tx_1710000000` |
-| `date` | YYYY-MM-DD | Expense date | `2026-09-12` |
-| `amount` | number | Amount spent | `142.50` |
-| `category` | string | Category tag | `Groceries` |
-| `description` | string | Expense description | `Trader Joe's weekly haul` |
-| `paidBy` | string | `partner_a` or `partner_b` | `partner_a` |
-| `splitRatio` | string | `50/50`, `60/40`, `70/30`, `100/0`, `0/100` | `50/50` |
-| `partnerASplitPercentage` | number | Partner A percentage (0-100) | `50` |
-| `isRecurring` | boolean | Recurring flag | `false` |
-| `needsApproval` | boolean | True if >= $200 | `false` |
-| `approvedByPartner` | boolean | Partner acknowledgment flag | `true` |
-| `receiptUrl` | string | Google Drive view URL | `https://drive.google.com/file/d/.../view` |
-| `notes` | string | Partner comment thread / notes | `Restocked pantry staples` |
-| `createdAt` | ISO string | Creation timestamp | `2026-09-12T10:00:00.000Z` |
+| Header | Type | Description |
+|---|---|---|
+| `id` | string | Unique transaction ID |
+| `date` | YYYY-MM-DD | Expense / deposit date |
+| `amount` | number | Amount spent or saved |
+| `category` | string | Category tag |
+| `description` | string | Expense / deposit description |
+| `paidBy` | string | `partner_a` or `partner_b` |
+| `splitRatio` | string | `50/50`, `60/40`, `70/30`, `100/0`, `0/100`, `custom` |
+| `partnerASplitPercentage` | number | Partner A percentage (0-100) |
+| `isRecurring` | boolean | Recurring flag |
+| `needsApproval` | boolean | True if >= $200 |
+| `approvedByPartner` | boolean | Partner acknowledgment flag |
+| `receiptUrl` | string | Google Drive view URL |
+| `notes` | string | Partner comment thread / notes |
+| `type` | string | `expense` or `savings` |
+| `goalId` | string | Target savings goal ID |
+| `createdAt` | ISO string | Creation timestamp |
 
 ### 3. Tab: `Budgets`
-| Header | Type | Description | Sample Data |
-|---|---|---|---|
-| `id` | string | Unique budget ID | `bg_1` |
-| `category` | string | Category name | `Groceries` |
-| `icon` | string | Lucide icon name | `Utensils` |
-| `monthlyLimit` | number | Monthly cap | `650` |
-| `spentAmount` | number | MTD spent | `382.50` |
-| `rolloverEnabled` | boolean | Rollover toggle | `true` |
-| `rolloverAccumulated` | number | Rolled over surplus | `45.00` |
-| `alertThreshold` | number | Alert fraction (0.9 = 90%) | `0.9` |
-| `monthYear` | YYYY-MM | Target month | `2026-09` |
+| Header | Type | Description |
+|---|---|---|
+| `id` | string | Unique budget ID |
+| `category` | string | Category name |
+| `icon` | string | Lucide icon name |
+| `monthlyLimit` | number | Monthly cap |
+| `spentAmount` | number | MTD spent |
+| `rolloverEnabled` | boolean | Rollover toggle |
+| `rolloverAccumulated` | number | Rolled over surplus |
+| `alertThreshold` | number | Alert fraction (0.9 = 90%) |
+| `monthYear` | YYYY-MM | Target month |
 
 ### 4. Tab: `Goals`
-| Header | Type | Description | Sample Data |
-|---|---|---|---|
-| `id` | string | Unique goal ID | `goal_1` |
-| `title` | string | Goal title | `Emergency Safety Cushion` |
-| `emoji` | string | Display emoji | `🛡️` |
-| `targetAmount` | number | Total target | `12000` |
-| `currentAmount` | number | Current accumulated | `8400` |
-| `targetDate` | YYYY-MM-DD | Target completion date | `2026-12-31` |
-| `category` | string | Category tag | `Emergency` |
-| `priority` | string | `high`, `medium`, `low` | `high` |
-| `partnerAContribution` | number | Alex's total contribution | `4500` |
-| `partnerBContribution` | number | Sam's total contribution | `3900` |
-| `roundupEnabled` | boolean | Spare change sweep toggle | `true` |
-| `roundupUnit` | number | `1` or `5` (round to nearest $1 or $5) | `1` |
-| `status` | string | `active`, `achieved`, `paused` | `active` |
-| `createdAt` | ISO string | Timestamp | `2026-01-01T00:00:00.000Z` |
+| Header | Type | Description |
+|---|---|---|
+| `id` | string | Unique goal ID |
+| `title` | string | Goal title |
+| `emoji` | string | Display emoji |
+| `targetAmount` | number | Total target |
+| `currentAmount` | number | Current accumulated |
+| `targetDate` | YYYY-MM-DD | Target completion date |
+| `category` | string | Category tag |
+| `priority` | string | `high`, `medium`, `low` |
+| `partnerAContribution` | number | Partner A total contribution |
+| `partnerBContribution` | number | Partner B total contribution |
+| `roundupEnabled` | boolean | Spare change sweep toggle |
+| `roundupUnit` | number | `1` or `5` (round to nearest $1 or $5) |
+| `status` | string | `active`, `achieved`, `paused` |
+| `createdAt` | ISO string | Timestamp |
 
 ### 5. Tab: `Recurring`
-| Header | Type | Description | Sample Data |
-|---|---|---|---|
-| `id` | string | Unique subscription ID | `rec_1` |
-| `title` | string | Service or lease name | `Netflix Premium 4K` |
-| `amount` | number | Current monthly charge | `22.99` |
-| `frequency` | string | `monthly`, `weekly`, `yearly` | `monthly` |
-| `billingDay` | number | Day of month (1-31) | `14` |
-| `category` | string | Category tag | `Entertainment` |
-| `paidBy` | string | `partner_a` or `partner_b` | `partner_b` |
-| `lastBilledDate` | YYYY-MM-DD | Last transaction date | `2026-08-14` |
-| `previousAmount` | number | Previous charge (for inflation alert) | `19.99` |
-| `lastActiveDate` | YYYY-MM-DD | Date last used (for unused warning) | `2026-07-01` |
-| `status` | string | `active`, `flagged`, `cancelled` | `flagged` |
-| `notes` | string | Notes / terms | `Raised by $3.00 last month` |
+| Header | Type | Description |
+|---|---|---|
+| `id` | string | Unique subscription ID |
+| `title` | string | Service or lease name |
+| `amount` | number | Current monthly charge |
+| `frequency` | string | `monthly`, `weekly`, `yearly` |
+| `billingDay` | number | Day of month (1-31) |
+| `category` | string | Category tag |
+| `paidBy` | string | `partner_a` or `partner_b` |
+| `lastBilledDate` | YYYY-MM-DD | Last transaction date |
+| `previousAmount` | number | Previous charge (for inflation alert) |
+| `lastActiveDate` | YYYY-MM-DD | Date last used (for unused warning) |
+| `status` | string | `active`, `flagged`, `cancelled` |
+| `notes` | string | Notes / terms |
 
 ### 6. Tab: `Settlements`
-| Header | Type | Description | Sample Data |
-|---|---|---|---|
-| `id` | string | Unique settlement ID | `stl_1` |
-| `date` | YYYY-MM-DD | Settlement date | `2026-08-28` |
-| `fromPartner` | string | Debtor partner | `partner_b` |
-| `toPartner` | string | Creditor partner | `partner_a` |
-| `amount` | number | Amount transferred | `150.00` |
-| `status` | string | `settled`, `pending` | `settled` |
-| `note` | string | Settlement note | `Settled concert tickets` |
+| Header | Type | Description |
+|---|---|---|
+| `id` | string | Unique settlement ID |
+| `date` | YYYY-MM-DD | Settlement date |
+| `fromPartner` | string | Debtor partner |
+| `toPartner` | string | Creditor partner |
+| `amount` | number | Amount transferred |
+| `status` | string | `settled`, `pending` |
+| `note` | string | Settlement note |
 
 ---
 
@@ -115,10 +117,10 @@ Create a new Google Spreadsheet and share it with your Service Account Email wit
 
 ### Step 1: Google Cloud Service Account Setup
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a new project named `duonest-finance`.
+2. Create a new project named `babi-savings`.
 3. Enable both **Google Sheets API** and **Google Drive API** in *APIs & Services > Library*.
 4. Navigate to *IAM & Admin > Service Accounts*, click **Create Service Account**:
-   - Service account name: `duonest-service`
+   - Service account name: `babi-savings-service`
    - Role: Not strictly required at project level. Click Done.
 5. Click on the created service account, go to the **Keys** tab, click **Add Key > Create new key > JSON**.
 6. Download the key JSON file. You will need `client_email` and `private_key`.
@@ -135,7 +137,7 @@ cd "savings  web"
 # 2. Copy the environment template
 cp .env.example .env.local
 
-# 3. Fill in your credentials in .env.local (or leave blank to use the built-in demo store)
+# 3. Fill in your credentials in .env.local
 # 4. Start local development server
 npm run dev
 ```
@@ -144,30 +146,19 @@ Open [http://localhost:3000](http://localhost:3000) on your desktop or mobile de
 ---
 
 ### Step 3: Deploying to Vercel
-1. Push your repository to GitHub or GitLab.
+1. Push your repository to GitHub (`main` branch).
 2. Go to [Vercel Dashboard](https://vercel.com/dashboard) and click **Add New > Project**.
-3. Import your DuoNest repository.
+3. Import your Babi-Savings repository.
 4. Under **Environment Variables**, configure:
    - `JWT_SECRET`: Any random 64-character string
-   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`: `duonest-service@your-project.iam.gserviceaccount.com`
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`: `babi-savings-service@your-project.iam.gserviceaccount.com`
    - `GOOGLE_PRIVATE_KEY`: Complete private key including `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`
    - `GOOGLE_SHEET_ID`: Your Google Spreadsheet ID
    - `GOOGLE_DRIVE_RECEIPTS_FOLDER_ID`: Your Google Drive Folder ID
+   - `GOOGLE_CLIENT_ID`: Google OAuth Client ID
+   - `GOOGLE_CLIENT_SECRET`: Google OAuth Client Secret
+   - `PARTNER_A_EMAIL`: Partner A's authorized Google email
+   - `PARTNER_B_EMAIL`: Partner B's authorized Google email
 5. Click **Deploy**. Vercel will build the serverless edge routes and deploy your mobile-ready couples application in ~60 seconds!
 
----
-
-### Step 4: Google Single Sign-On (SSO) Setup (Optional)
-To enable one-tap Google login for the couple:
-1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), go to **Credentials > Create Credentials > OAuth client ID**.
-2. Application type: **Web application**.
-3. Under **Authorized redirect URIs**, add:
-   - For local testing: `http://localhost:3000/api/auth/sso/callback`
-   - For production Vercel: `https://your-duonest-project.vercel.app/api/auth/sso/callback`
-4. Copy the generated `Client ID` and `Client Secret` into your Vercel Environment Variables:
-   - `GOOGLE_CLIENT_ID`: `...apps.googleusercontent.com`
-   - `GOOGLE_CLIENT_SECRET`: `...`
-   - `PARTNER_A_EMAIL`: `alex@example.com`
-   - `PARTNER_B_EMAIL`: `sam@example.com`
-5. Partners can now click the Google icon in the top header to log in instantly with their Google accounts!
 

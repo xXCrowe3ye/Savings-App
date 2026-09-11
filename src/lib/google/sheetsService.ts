@@ -133,7 +133,7 @@ export async function ensureSpreadsheetInitialized(): Promise<void> {
       });
     }
 
-    // Ensure header row and initial data are populated in each tab if empty
+    // Ensure header row is populated in each tab if empty
     for (const [tabName, headers] of Object.entries(TAB_HEADERS)) {
       try {
         const res = await sheets.spreadsheets.values.get({
@@ -142,7 +142,7 @@ export async function ensureSpreadsheetInitialized(): Promise<void> {
         });
 
         if (!res.data.values || res.data.values.length === 0) {
-          // Write headers
+          // Write headers only
           await sheets.spreadsheets.values.update({
             spreadsheetId: sheetId,
             range: `'${tabName}'!A1`,
@@ -150,29 +150,17 @@ export async function ensureSpreadsheetInitialized(): Promise<void> {
             requestBody: { values: [headers] },
           });
 
-          // Seed default sample records if first run
-          let seedRows: any[][] = [];
+          // If Users tab is created, seed the 2 partner profile slots without mock financial transactions
           if (tabName === "Users") {
-            seedRows = INITIAL_USERS.map((u) => headers.map((h) => (u as any)[h] ?? ""));
-          } else if (tabName === "Transactions") {
-            seedRows = INITIAL_TRANSACTIONS.map((t) => headers.map((h) => (t as any)[h] ?? ""));
-          } else if (tabName === "Budgets") {
-            seedRows = INITIAL_BUDGETS.map((b) => headers.map((h) => (b as any)[h] ?? ""));
-          } else if (tabName === "Goals") {
-            seedRows = INITIAL_GOALS.map((g) => headers.map((h) => (g as any)[h] ?? ""));
-          } else if (tabName === "Recurring") {
-            seedRows = INITIAL_RECURRING.map((r) => headers.map((h) => (r as any)[h] ?? ""));
-          } else if (tabName === "Settlements") {
-            seedRows = INITIAL_SETTLEMENTS.map((s) => headers.map((h) => (s as any)[h] ?? ""));
-          }
-
-          if (seedRows.length > 0) {
-            await sheets.spreadsheets.values.append({
-              spreadsheetId: sheetId,
-              range: `'${tabName}'!A2`,
-              valueInputOption: "USER_ENTERED",
-              requestBody: { values: seedRows },
-            });
+            const seedRows = INITIAL_USERS.map((u) => headers.map((h) => (u as any)[h] ?? ""));
+            if (seedRows.length > 0) {
+              await sheets.spreadsheets.values.append({
+                spreadsheetId: sheetId,
+                range: `'${tabName}'!A2`,
+                valueInputOption: "USER_ENTERED",
+                requestBody: { values: seedRows },
+              });
+            }
           }
         }
       } catch (err) {

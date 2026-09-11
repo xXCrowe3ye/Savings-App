@@ -31,9 +31,9 @@ class InMemoryStore {
 }
 
 // Global singleton across serverless invocations in dev
-const globalStore = (global as any).__DUONEST_STORE__ || new InMemoryStore();
+const globalStore = (global as any).__BABI_SAVINGS_STORE__ || new InMemoryStore();
 if (process.env.NODE_ENV !== "production") {
-  (global as any).__DUONEST_STORE__ = globalStore;
+  (global as any).__BABI_SAVINGS_STORE__ = globalStore;
 }
 
 export const db = {

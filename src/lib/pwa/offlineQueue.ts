@@ -4,7 +4,7 @@
 
 import { Transaction } from "@/types";
 
-const DB_NAME = "duonest_offline_db";
+const DB_NAME = "babi_savings_offline_db";
 const STORE_NAME = "offline_transactions";
 const DB_VERSION = 1;
 
@@ -41,9 +41,9 @@ export async function queueOfflineTransaction(
     txStore.put(offlineTx);
   } catch (err) {
     console.warn("Failed to store in IndexedDB, saving to localStorage:", err);
-    const existing = JSON.parse(localStorage.getItem("duonest_offline_txs") || "[]");
+    const existing = JSON.parse(localStorage.getItem("babi_savings_offline_txs") || "[]");
     existing.push(offlineTx);
-    localStorage.setItem("duonest_offline_txs", JSON.stringify(existing));
+    localStorage.setItem("babi_savings_offline_txs", JSON.stringify(existing));
   }
 
   return offlineTx;
@@ -59,7 +59,7 @@ export async function getQueuedTransactions(): Promise<Transaction[]> {
       req.onerror = () => resolve([]);
     });
   } catch {
-    const existing = JSON.parse(localStorage.getItem("duonest_offline_txs") || "[]");
+    const existing = JSON.parse(localStorage.getItem("babi_savings_offline_txs") || "[]");
     return existing;
   }
 }
@@ -94,7 +94,7 @@ export async function syncOfflineTransactions(
   }
 
   // Clear localStorage fallback if present
-  localStorage.removeItem("duonest_offline_txs");
+  localStorage.removeItem("babi_savings_offline_txs");
 
   if (onSynced && successCount > 0) {
     onSynced(successCount);

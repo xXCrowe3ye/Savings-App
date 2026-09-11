@@ -6,20 +6,22 @@ import { formatMoney } from "@/lib/utils";
 import { Scale, CheckCircle2, ArrowRightLeft, Sparkles } from "lucide-react";
 
 export function DebtSettlementCard() {
-  const { metrics, currency, refreshData, triggerConfetti } = useApp();
+  const { currentUser, metrics, currency, refreshData, triggerConfetti } = useApp();
   const [isSettling, setIsSettling] = useState(false);
 
   const iou = metrics?.netIOU;
   const isSettled = !iou || iou.amount <= 0;
 
-  const debtorName = iou?.from === "partner_a" ? "Alex" : "Sam";
-  const creditorName = iou?.to === "partner_a" ? "Alex" : "Sam";
+  const partnerAName = currentUser.partnerKey === "partner_a" ? (currentUser.nickname || currentUser.name || "Partner A") : "Partner A";
+  const partnerBName = currentUser.partnerKey === "partner_b" ? (currentUser.nickname || currentUser.name || "Partner B") : "Partner B";
+
+  const debtorName = iou?.from === "partner_a" ? partnerAName : partnerBName;
+  const creditorName = iou?.to === "partner_a" ? partnerAName : partnerBName;
 
   const handleSettle = async () => {
     if (!iou || iou.amount <= 0) return;
     setIsSettling(true);
     try {
-      // In demo/live, record settlement
       const res = await fetch("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -30,7 +32,7 @@ export function DebtSettlementCard() {
           date: new Date().toISOString().split("T")[0],
           paidBy: iou.from,
           splitRatio: "0/100", // pure individual settlement
-          notes: "Settled up via DuoNest IOU tracker",
+          notes: "Settled up via Babi-Savings IOU tracker",
         }),
       });
 

@@ -1,5 +1,5 @@
-// DuoNest Service Worker for Offline PWA Capabilities
-const CACHE_NAME = "duonest-v1";
+// Babi-Savings Service Worker for Offline PWA Capabilities
+const CACHE_NAME = "babi-savings-v1";
 const STATIC_ASSETS = ["/", "/manifest.json", "/budget", "/goals", "/recurring", "/analytics"];
 
 self.addEventListener("install", (event) => {

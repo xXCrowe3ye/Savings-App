@@ -40,7 +40,7 @@ interface AppContextType {
   updateTransactionNotes: (id: string, notes: string) => Promise<void>;
   boostGoal: (goalId: string, amount: number, partnerKey: PartnerKey | "both") => Promise<void>;
   toggleGoalRoundup: (goalId: string, enabled: boolean, unit?: 1 | 5) => Promise<void>;
-  switchPartner: (partnerKey: PartnerKey) => Promise<void>;
+  logout: () => Promise<void>;
   updateProfile: (nickname: string, avatarUrl: string, themeAccent: string) => Promise<void>;
   triggerConfetti: () => void;
 }
@@ -48,11 +48,11 @@ interface AppContextType {
 const DEFAULT_USER_A: UserProfile = {
   id: "user_a",
   partnerKey: "partner_a",
-  name: "Hanz Angelo",
-  nickname: "Hanz",
-  email: "hanzangelobernabe212@gmail.com",
+  name: "Partner",
+  nickname: "Partner",
+  email: "",
   themeAccent: "#6366f1",
-  hasPin: true,
+  hasPin: false,
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -78,7 +78,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setCurrency = (c: CurrencyCode) => {
     setCurrencyState(c);
     if (typeof window !== "undefined") {
-      localStorage.setItem("duonest_currency", c);
+      localStorage.setItem("babi_savings_currency", c);
     }
   };
 
@@ -139,7 +139,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
 
     // Load stored currency
-    const savedCurrency = localStorage.getItem("duonest_currency") as CurrencyCode;
+    const savedCurrency = localStorage.getItem("babi_savings_currency") as CurrencyCode;
     if (savedCurrency) setCurrencyState(savedCurrency);
 
     // Initial check
@@ -172,7 +172,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
-        .then(() => console.log("DuoNest PWA ServiceWorker registered"))
+        .then(() => console.log("Babi-Savings PWA ServiceWorker registered"))
         .catch((err) => console.log("SW registration error:", err));
     }
 
@@ -225,21 +225,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setIsPinLocked(true);
   };
 
-  const switchPartner = async (partnerKey: PartnerKey) => {
+  const logout = async () => {
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ partnerKey }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCurrentUser(data.user);
-        setIsAuthenticated(true);
-        await refreshData();
-      }
+      await fetch("/api/auth/logout", { method: "POST" });
+      setIsAuthenticated(false);
+      setCurrentUser(DEFAULT_USER_A);
+      window.location.href = "/";
     } catch (err) {
-      console.error("Partner switch error:", err);
+      console.error("Logout error:", err);
     }
   };
 
@@ -383,7 +376,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateTransactionNotes,
         boostGoal,
         toggleGoalRoundup,
-        switchPartner,
+        logout,
         updateProfile,
         triggerConfetti,
       }}

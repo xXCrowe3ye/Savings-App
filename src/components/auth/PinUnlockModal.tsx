@@ -47,10 +47,11 @@ export function PinUnlockModal() {
           <Lock className="w-8 h-8" />
         </div>
 
-        <h2 className="text-xl font-bold tracking-tight mb-1">Welcome back, {currentUser.name.split(" ")[0]}</h2>
+        <h2 className="text-xl font-bold tracking-tight mb-1">
+          Welcome back, {currentUser.nickname || currentUser.name.split(" ")[0]}
+        </h2>
         <p className="text-xs text-muted-foreground mb-6">
-          Enter your 4-digit PIN to unlock session <br />
-          <span className="font-mono text-[11px] text-primary">(Demo PIN: 1234)</span>
+          Enter your 4-digit PIN to unlock session
         </p>
 
         {/* 4 Pin Dots */}
@@ -74,7 +75,7 @@ export function PinUnlockModal() {
 
         {error && (
           <p className="text-xs text-destructive font-medium mb-4 animate-in fade-in">
-            Incorrect PIN. Try 1234.
+            Incorrect PIN code.
           </p>
         )}
 

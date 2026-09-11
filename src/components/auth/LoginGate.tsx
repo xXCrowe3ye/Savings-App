@@ -1,31 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
-import { useApp } from "@/context/AppContext";
-import { Sparkles, Shield, Lock, Users, AlertCircle } from "lucide-react";
+import React from "react";
+import { Sparkles, Shield, AlertCircle } from "lucide-react";
 
 export function LoginGate() {
-  const { switchPartner } = useApp();
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState("");
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-
-  // Check URL search params for sso_error
-  const isUnauthorizedEmail =
+  const isUnauthorized =
     typeof window !== "undefined" &&
     window.location.search.includes("sso_error=unauthorized_email");
-
-  const handlePartnerLogin = async (partnerKey: "partner_a" | "partner_b") => {
-    setIsLoggingIn(true);
-    setError("");
-    try {
-      await switchPartner(partnerKey);
-    } catch {
-      setError("Login failed. Check credentials.");
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center p-4">
@@ -35,32 +16,32 @@ export function LoginGate() {
           <Sparkles className="w-8 h-8 text-white" />
         </div>
 
-        <h1 className="text-2xl font-black tracking-tight">DuoNest</h1>
+        <h1 className="text-2xl font-black tracking-tight">Babi-Savings</h1>
         <p className="text-xs text-muted-foreground mt-1">
-          Private Joint Finance &amp; Savings Vault
+          Private Joint Finance &amp; Savings Space
         </p>
 
-        {/* Authorized Couple Badge */}
+        {/* Secure Access Badge */}
         <div className="mt-3 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold flex items-center space-x-1.5">
           <Shield className="w-3.5 h-3.5 text-primary" />
-          <span>Reserved for Hanz &amp; Julia</span>
+          <span>Authorized Access Only</span>
         </div>
 
-        {/* Unauthorized error alert */}
-        {isUnauthorizedEmail && (
+        {/* Unauthorized error alert (Generic message, zero email leakage) */}
+        {isUnauthorized && (
           <div className="mt-4 p-3 rounded-2xl bg-destructive/10 border border-destructive/30 text-destructive text-xs text-left flex items-start space-x-2 animate-in fade-in">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <div>
-              <b>Unauthorized Google Account:</b>
+              <b>Access Denied:</b>
               <p className="text-[11px] mt-0.5 opacity-90">
-                Access is restricted to <b>hanzangelobernabe212@gmail.com</b> and <b>causon.julia@gmail.com</b>.
+                This Google account is not authorized to view or edit this private vault.
               </p>
             </div>
           </div>
         )}
 
         {/* Primary Action: Google SSO */}
-        <div className="w-full mt-6 space-y-3">
+        <div className="w-full mt-6">
           <a
             href="/api/auth/sso/google"
             className="w-full py-3.5 px-4 rounded-2xl bg-card border hover:border-primary/50 text-foreground font-bold text-sm shadow-md hover:bg-secondary/60 active:scale-[0.99] transition-all flex items-center justify-center space-x-3"
@@ -85,32 +66,6 @@ export function LoginGate() {
             </svg>
             <span>Sign in with Google</span>
           </a>
-
-          {/* Quick Partner Select (for PIN / local bypass) */}
-          <div className="pt-3 border-t">
-            <span className="text-[11px] text-muted-foreground block mb-2 font-medium">
-              Or quick partner unlock:
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handlePartnerLogin("partner_a")}
-                disabled={isLoggingIn}
-                className="py-2.5 px-3 rounded-2xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 text-xs font-bold transition-all flex items-center justify-center space-x-1.5"
-              >
-                <span>Hanz</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handlePartnerLogin("partner_b")}
-                disabled={isLoggingIn}
-                className="py-2.5 px-3 rounded-2xl bg-teal-600/10 hover:bg-teal-600/20 text-teal-700 dark:text-teal-300 border border-teal-500/20 text-xs font-bold transition-all flex items-center justify-center space-x-1.5"
-              >
-                <span>Julia</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

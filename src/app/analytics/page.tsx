@@ -44,7 +44,7 @@ export default function AnalyticsPage() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `duonest_export_${Date.now()}.${format}`;
+        a.download = `babi_savings_export_${Date.now()}.${format}`;
         document.body.appendChild(a);
         a.click();
         a.remove();

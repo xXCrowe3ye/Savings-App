@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
+import { getCurrentSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 export async function GET(req: Request) {
   try {
+    const session = await getCurrentSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const format = searchParams.get("format") || "json";
 
@@ -32,7 +38,7 @@ export async function GET(req: Request) {
       return new NextResponse(csvContent, {
         headers: {
           "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="duonest_transactions_${Date.now()}.csv"`,
+          "Content-Disposition": `attachment; filename="babi_savings_transactions_${Date.now()}.csv"`,
         },
       });
     }
@@ -53,7 +59,7 @@ export async function GET(req: Request) {
     return new NextResponse(JSON.stringify(backup, null, 2), {
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="duonest_backup_${Date.now()}.json"`,
+        "Content-Disposition": `attachment; filename="babi_savings_backup_${Date.now()}.json"`,
       },
     });
   } catch (error: any) {

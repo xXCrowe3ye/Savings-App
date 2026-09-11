@@ -73,9 +73,7 @@ export async function GET(req: Request) {
       fallbackName = "Julia Causon";
     } else {
       // Access Denied: Not part of the couple whitelist!
-      return NextResponse.redirect(
-        `${origin}/?sso_error=unauthorized_email&unauthorized_email=${encodeURIComponent(email)}`
-      );
+      return NextResponse.redirect(`${origin}/?sso_error=unauthorized_email`);
     }
 
     const existingUser = await db.getUserByPartner(partnerKey);

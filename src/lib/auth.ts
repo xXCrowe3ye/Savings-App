@@ -4,10 +4,10 @@ import { cookies } from "next/headers";
 import { PartnerKey, UserProfile } from "@/types";
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "duonest_super_secret_master_key_2026_salt_998877"
+  process.env.JWT_SECRET || "babi_savings_master_jwt_secret_production_2026"
 );
 
-export const COOKIE_NAME = "duonest_session";
+export const COOKIE_NAME = "babi_savings_session";
 
 export interface SessionPayload {
   userId: string;
