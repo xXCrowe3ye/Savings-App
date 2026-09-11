@@ -24,10 +24,10 @@
 2. Go to the **SQL Editor** in your Supabase dashboard.
 3. Open [`supabase/schema.sql`](file:///c:/Users/SpikeSpiegel/Documents/savings%20%20web/supabase/schema.sql) in this repository, paste the entire SQL script, and click **Run**.
 4. Go to **Project Settings > API** and copy:
-   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public key` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `Project URL` → `SUPABASE_URL`
+   - `anon public key` → `SUPABASE_ANON_KEY`
    - `service_role secret key` → `SUPABASE_SERVICE_ROLE_KEY`
-5. Add these environment variables to `.env.local` or your Vercel project settings.
+5. Add these environment variables to `.env.local` or your Vercel project settings (without `NEXT_PUBLIC_` prefix so they stay private to serverless functions).
 
 ---
 
