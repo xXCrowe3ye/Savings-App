@@ -108,3 +108,10 @@ VALUES
   ('user_a', 'partner_a', 'Partner A', '', 'hanzangelobernabe212@gmail.com', '#6366f1'),
   ('user_b', 'partner_b', 'Partner B', '', 'causon.julia@gmail.com', '#0d9488')
 ON CONFLICT (partner_key) DO NOTHING;
+
+-- Explicitly grant table permissions for API access
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
