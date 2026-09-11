@@ -8,8 +8,22 @@ import {
   Settlement,
   UserProfile,
 } from "@/types";
+import {
+  INITIAL_USERS,
+  INITIAL_TRANSACTIONS,
+  INITIAL_BUDGETS,
+  INITIAL_GOALS,
+  INITIAL_RECURRING,
+  INITIAL_SETTLEMENTS,
+} from "@/lib/mock/seedData";
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID;
+function getSpreadsheetId(): string {
+  const id = process.env.GOOGLE_SHEET_ID?.trim();
+  if (!id) {
+    throw new Error("GOOGLE_SHEET_ID is missing in environment variables.");
+  }
+  return id;
+}
 
 // Tab Headers definition
 export const TAB_HEADERS = {
@@ -74,57 +88,99 @@ export const TAB_HEADERS = {
   Settlements: ["id", "date", "fromPartner", "toPartner", "amount", "status", "note"],
 };
 
+let initPromise: Promise<void> | null = null;
+
 /**
  * Initializes Google Sheet tabs and header rows if not present.
  */
-export async function ensureSpreadsheetInitialized() {
-  const sheets = getGoogleSheetsClient();
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
-  const existingTitles = meta.data.sheets?.map((s) => s.properties?.title) || [];
+export async function ensureSpreadsheetInitialized(): Promise<void> {
+  if (initPromise) return initPromise;
 
-  const requests: any[] = [];
-  for (const [tabName, headers] of Object.entries(TAB_HEADERS)) {
-    if (!existingTitles.includes(tabName)) {
-      requests.push({
-        addSheet: {
-          properties: { title: tabName },
-        },
+  initPromise = (async () => {
+    const sheetId = getSpreadsheetId();
+    const sheets = getGoogleSheetsClient();
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
+    const existingTitles = meta.data.sheets?.map((s) => s.properties?.title) || [];
+
+    const requests: any[] = [];
+    for (const tabName of Object.keys(TAB_HEADERS)) {
+      if (!existingTitles.includes(tabName)) {
+        requests.push({
+          addSheet: {
+            properties: { title: tabName },
+          },
+        });
+      }
+    }
+
+    if (requests.length > 0) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: sheetId,
+        requestBody: { requests },
       });
     }
-  }
 
-  if (requests.length > 0) {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: SHEET_ID,
-      requestBody: { requests },
-    });
-  }
+    // Ensure header row and initial data are populated in each tab if empty
+    for (const [tabName, headers] of Object.entries(TAB_HEADERS)) {
+      try {
+        const res = await sheets.spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: `'${tabName}'!A1:Z1`,
+        });
 
-  // Ensure header row is populated in each tab
-  for (const [tabName, headers] of Object.entries(TAB_HEADERS)) {
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${tabName}!A1:Z1`,
-    });
-    if (!res.data.values || res.data.values.length === 0) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID,
-        range: `${tabName}!A1`,
-        valueInputOption: "RAW",
-        requestBody: { values: [headers] },
-      });
+        if (!res.data.values || res.data.values.length === 0) {
+          // Write headers
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: `'${tabName}'!A1`,
+            valueInputOption: "RAW",
+            requestBody: { values: [headers] },
+          });
+
+          // Seed default sample records if first run
+          let seedRows: any[][] = [];
+          if (tabName === "Users") {
+            seedRows = INITIAL_USERS.map((u) => headers.map((h) => (u as any)[h] ?? ""));
+          } else if (tabName === "Transactions") {
+            seedRows = INITIAL_TRANSACTIONS.map((t) => headers.map((h) => (t as any)[h] ?? ""));
+          } else if (tabName === "Budgets") {
+            seedRows = INITIAL_BUDGETS.map((b) => headers.map((h) => (b as any)[h] ?? ""));
+          } else if (tabName === "Goals") {
+            seedRows = INITIAL_GOALS.map((g) => headers.map((h) => (g as any)[h] ?? ""));
+          } else if (tabName === "Recurring") {
+            seedRows = INITIAL_RECURRING.map((r) => headers.map((h) => (r as any)[h] ?? ""));
+          } else if (tabName === "Settlements") {
+            seedRows = INITIAL_SETTLEMENTS.map((s) => headers.map((h) => (s as any)[h] ?? ""));
+          }
+
+          if (seedRows.length > 0) {
+            await sheets.spreadsheets.values.append({
+              spreadsheetId: sheetId,
+              range: `'${tabName}'!A2`,
+              valueInputOption: "USER_ENTERED",
+              requestBody: { values: seedRows },
+            });
+          }
+        }
+      } catch (err) {
+        console.warn(`Failed to verify tab ${tabName}:`, err);
+      }
     }
-  }
+  })();
+
+  return initPromise;
 }
 
 /**
  * Reads all rows from a given sheet tab and maps them to an array of objects.
  */
 export async function getSheetRows<T>(tabName: keyof typeof TAB_HEADERS): Promise<T[]> {
+  await ensureSpreadsheetInitialized();
+  const sheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
   const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `${tabName}!A2:Z`,
+    spreadsheetId: sheetId,
+    range: `'${tabName}'!A2:Z`,
   });
 
   const rows = res.data.values;
@@ -168,6 +224,8 @@ export async function getSheetRows<T>(tabName: keyof typeof TAB_HEADERS): Promis
  * Appends a record to a given sheet tab with formula injection sanitization.
  */
 export async function appendSheetRow(tabName: keyof typeof TAB_HEADERS, record: Record<string, any>) {
+  await ensureSpreadsheetInitialized();
+  const sheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
   const headers = TAB_HEADERS[tabName];
   const rowValues = headers.map((header) => {
@@ -176,8 +234,8 @@ export async function appendSheetRow(tabName: keyof typeof TAB_HEADERS, record: 
   });
 
   await sheets.spreadsheets.values.append({
-    spreadsheetId: SHEET_ID,
-    range: `${tabName}!A:A`,
+    spreadsheetId: sheetId,
+    range: `'${tabName}'!A:A`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
       values: [rowValues],
@@ -193,10 +251,12 @@ export async function updateSheetRow(
   id: string,
   updatedFields: Record<string, any>
 ) {
+  await ensureSpreadsheetInitialized();
+  const sheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
   const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `${tabName}!A1:Z`,
+    spreadsheetId: sheetId,
+    range: `'${tabName}'!A1:Z`,
   });
 
   const rows = res.data.values || [];
@@ -227,8 +287,8 @@ export async function updateSheetRow(
   );
 
   await sheets.spreadsheets.values.update({
-    spreadsheetId: SHEET_ID,
-    range: `${tabName}!A${rowIndex}`,
+    spreadsheetId: sheetId,
+    range: `'${tabName}'!A${rowIndex}`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
       values: [updatedRowValues],
@@ -240,18 +300,20 @@ export async function updateSheetRow(
  * Deletes a row matching ID.
  */
 export async function deleteSheetRow(tabName: keyof typeof TAB_HEADERS, id: string) {
+  await ensureSpreadsheetInitialized();
+  const sheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
   const targetSheet = meta.data.sheets?.find((s) => s.properties?.title === tabName);
-  const sheetId = targetSheet?.properties?.sheetId;
+  const targetSheetId = targetSheet?.properties?.sheetId;
 
-  if (sheetId === undefined) {
+  if (targetSheetId === undefined) {
     throw new Error(`Sheet tab ${tabName} not found`);
   }
 
   const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `${tabName}!A1:A`,
+    spreadsheetId: sheetId,
+    range: `'${tabName}'!A1:A`,
   });
 
   const rows = res.data.values || [];
@@ -266,13 +328,13 @@ export async function deleteSheetRow(tabName: keyof typeof TAB_HEADERS, id: stri
   if (rowIndex0 === -1) return;
 
   await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: SHEET_ID,
+    spreadsheetId: sheetId,
     requestBody: {
       requests: [
         {
           deleteDimension: {
             range: {
-              sheetId,
+              sheetId: targetSheetId,
               dimension: "ROWS",
               startIndex: rowIndex0,
               endIndex: rowIndex0 + 1,
