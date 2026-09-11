@@ -3,6 +3,12 @@ import { createSessionToken, COOKIE_NAME } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PartnerKey } from "@/types";
 
+// Whitelisted couple emails
+const ALLOWED_EMAILS: Record<string, { partnerKey: PartnerKey; defaultName: string }> = {
+  "hanzangelobernabe212@gmail.com": { partnerKey: "partner_a", defaultName: "Hanz Angelo" },
+  "causon.julia@gmail.com": { partnerKey: "partner_b", defaultName: "Julia Causon" },
+};
+
 export async function GET(req: Request) {
   const { searchParams, origin } = new URL(req.url);
   const code = searchParams.get("code");
@@ -12,8 +18,8 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${origin}/?sso_error=${error || "missing_code"}`);
   }
 
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
   const redirectUri = `${origin}/api/auth/sso/callback`;
 
   if (!clientId || !clientSecret) {
@@ -50,32 +56,37 @@ export async function GET(req: Request) {
       return NextResponse.redirect(`${origin}/?sso_error=failed_to_fetch_profile`);
     }
 
-    const email = profile.email.toLowerCase();
-    const partnerAEmail = (process.env.PARTNER_A_EMAIL || "alex@duonest.local").toLowerCase();
-    const partnerBEmail = (process.env.PARTNER_B_EMAIL || "sam@duonest.local").toLowerCase();
+    const email = profile.email.toLowerCase().trim();
 
-    // 3. Couple Access Control: Determine if Partner A or Partner B
-    let partnerKey: PartnerKey = "partner_a";
-    if (email === partnerBEmail) {
-      partnerKey = "partner_b";
-    } else if (email !== partnerAEmail) {
-      // If neither matches explicitly, check if environment allows first-run registration or block
-      if (process.env.NODE_ENV === "production" && process.env.PARTNER_A_EMAIL && process.env.PARTNER_B_EMAIL) {
-        return NextResponse.redirect(`${origin}/?sso_error=unauthorized_couple_email`);
-      }
-      // In dev or unconstrained mode, map first user as partner_a
+    // Check custom environment whitelist or default couple whitelist
+    const partnerAEmail = (process.env.PARTNER_A_EMAIL || "hanzangelobernabe212@gmail.com").toLowerCase().trim();
+    const partnerBEmail = (process.env.PARTNER_B_EMAIL || "causon.julia@gmail.com").toLowerCase().trim();
+
+    let partnerKey: PartnerKey | null = null;
+    let fallbackName = profile.name || "Partner";
+
+    if (email === partnerAEmail || email === "hanzangelobernabe212@gmail.com") {
       partnerKey = "partner_a";
+      fallbackName = "Hanz Angelo";
+    } else if (email === partnerBEmail || email === "causon.julia@gmail.com") {
+      partnerKey = "partner_b";
+      fallbackName = "Julia Causon";
+    } else {
+      // Access Denied: Not part of the couple whitelist!
+      return NextResponse.redirect(
+        `${origin}/?sso_error=unauthorized_email&unauthorized_email=${encodeURIComponent(email)}`
+      );
     }
 
     const existingUser = await db.getUserByPartner(partnerKey);
 
-    // 4. Create session token
+    // 3. Issue signed JWT session token
     const sessionToken = await createSessionToken({
       userId: existingUser?.id || (partnerKey === "partner_a" ? "user_a" : "user_b"),
       partnerKey,
-      name: profile.name || (partnerKey === "partner_a" ? "Alex Vance" : "Sam Miller"),
+      name: existingUser?.nickname || existingUser?.name || fallbackName,
       email: profile.email,
-      themeAccent: partnerKey === "partner_a" ? "#6366f1" : "#0d9488",
+      themeAccent: existingUser?.themeAccent || (partnerKey === "partner_a" ? "#6366f1" : "#0d9488"),
       hasPin: true,
     });
 

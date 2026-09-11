@@ -11,16 +11,20 @@ export const INITIAL_USERS: UserProfile[] = [
   {
     id: "user_a",
     partnerKey: "partner_a",
-    name: "Alex Vance",
-    email: "alex@duonest.local",
+    name: "Hanz Angelo",
+    nickname: "Hanz",
+    email: "hanzangelobernabe212@gmail.com",
+    avatarUrl: "",
     themeAccent: "#6366f1", // Indigo
     hasPin: true,
   },
   {
     id: "user_b",
     partnerKey: "partner_b",
-    name: "Sam Miller",
-    email: "sam@duonest.local",
+    name: "Julia Causon",
+    nickname: "Julia",
+    email: "causon.julia@gmail.com",
+    avatarUrl: "",
     themeAccent: "#0d9488", // Teal
     hasPin: true,
   },
@@ -37,6 +41,7 @@ const formatDate = (offsetDays: number) => {
 export const INITIAL_TRANSACTIONS: Transaction[] = [
   {
     id: "tx_1",
+    type: "expense",
     date: formatDate(0),
     amount: 142.5,
     category: "Groceries",
@@ -51,6 +56,7 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
   },
   {
     id: "tx_2",
+    type: "expense",
     date: formatDate(1),
     amount: 320.0,
     category: "Housing",
@@ -65,6 +71,7 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
   },
   {
     id: "tx_3",
+    type: "expense",
     date: formatDate(2),
     amount: 54.0,
     category: "Food & Dining",
@@ -79,19 +86,22 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
   },
   {
     id: "tx_4",
+    type: "savings",
     date: formatDate(3),
-    amount: 18.25,
-    category: "Transportation",
-    description: "Lyft to Downtown farmers market",
-    paidBy: "partner_b",
+    amount: 250.0,
+    category: "Savings",
+    description: "Monthly Emergency Stash Deposit",
+    paidBy: "partner_a",
     splitRatio: "50/50",
-    partnerASplitPercentage: 50,
+    goalId: "goal_1",
     needsApproval: false,
     approvedByPartner: true,
+    notes: "Direct deposit into Emergency Safety Cushion",
     createdAt: new Date(Date.now() - 259200000).toISOString(),
   },
   {
     id: "tx_5",
+    type: "expense",
     date: formatDate(5),
     amount: 85.0,
     category: "Utilities",
@@ -106,10 +116,11 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
   },
   {
     id: "tx_6",
+    type: "expense",
     date: formatDate(7),
     amount: 45.0,
     category: "Personal",
-    description: "Sam's Barber Appointment",
+    description: "Julia's Salon Appointment",
     paidBy: "partner_b",
     splitRatio: "0/100", // 100% individual expense
     partnerASplitPercentage: 0,
@@ -246,7 +257,7 @@ export const INITIAL_RECURRING: RecurringBill[] = [
     id: "rec_2",
     title: "Netflix Premium 4K",
     amount: 22.99,
-    previousAmount: 19.99, // Triggers Inflation / Anomaly Alert!
+    previousAmount: 19.99,
     frequency: "monthly",
     billingDay: 14,
     category: "Entertainment",
@@ -275,7 +286,7 @@ export const INITIAL_RECURRING: RecurringBill[] = [
     category: "Health & Fitness",
     paidBy: "partner_b",
     lastBilledDate: formatDate(17),
-    lastActiveDate: formatDate(65), // >60 days inactive -> Triggers Unused Subscription warning!
+    lastActiveDate: formatDate(65),
     status: "flagged",
     notes: "Has not been used in 65 days!",
   },

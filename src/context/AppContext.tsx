@@ -17,6 +17,7 @@ import { queueOfflineTransaction, syncOfflineTransactions, getQueuedTransactions
 interface AppContextType {
   currentUser: UserProfile;
   setCurrentUser: (user: UserProfile) => void;
+  isAuthenticated: boolean;
   currency: CurrencyCode;
   setCurrency: (currency: CurrencyCode) => void;
   transactions: Transaction[];
@@ -28,6 +29,9 @@ interface AppContextType {
   isOffline: boolean;
   pendingOfflineCount: number;
   isPinLocked: boolean;
+  isProfileOpen: boolean;
+  openProfile: () => void;
+  closeProfile: () => void;
   unlockWithPin: (pin: string) => Promise<boolean>;
   lockSession: () => void;
   refreshData: () => Promise<void>;
@@ -37,14 +41,16 @@ interface AppContextType {
   boostGoal: (goalId: string, amount: number, partnerKey: PartnerKey | "both") => Promise<void>;
   toggleGoalRoundup: (goalId: string, enabled: boolean, unit?: 1 | 5) => Promise<void>;
   switchPartner: (partnerKey: PartnerKey) => Promise<void>;
+  updateProfile: (nickname: string, avatarUrl: string, themeAccent: string) => Promise<void>;
   triggerConfetti: () => void;
 }
 
 const DEFAULT_USER_A: UserProfile = {
   id: "user_a",
   partnerKey: "partner_a",
-  name: "Alex Vance",
-  email: "alex@duonest.local",
+  name: "Hanz Angelo",
+  nickname: "Hanz",
+  email: "hanzangelobernabe212@gmail.com",
   themeAccent: "#6366f1",
   hasPin: true,
 };
@@ -53,6 +59,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserProfile>(DEFAULT_USER_A);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [currency, setCurrencyState] = useState<CurrencyCode>("USD");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
@@ -63,6 +70,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isOffline, setIsOffline] = useState(false);
   const [pendingOfflineCount, setPendingOfflineCount] = useState(0);
   const [isPinLocked, setIsPinLocked] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const openProfile = () => setIsProfileOpen(true);
+  const closeProfile = () => setIsProfileOpen(false);
 
   const setCurrency = (c: CurrencyCode) => {
     setCurrencyState(c);
@@ -83,12 +94,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const refreshData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [txRes, bgRes, glRes, rcRes] = await Promise.all([
+      const [meRes, txRes, bgRes, glRes, rcRes] = await Promise.all([
+        fetch("/api/auth/me"),
         fetch("/api/transactions"),
         fetch("/api/budgets"),
         fetch("/api/goals"),
         fetch("/api/recurring"),
       ]);
+
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        setIsAuthenticated(meData.authenticated);
+        if (meData.user) {
+          setCurrentUser(meData.user);
+        }
+      }
 
       if (txRes.ok) {
         const data = await txRes.json();
@@ -168,7 +188,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const resetTimer = () => {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        setIsPinLocked(true);
+        if (isAuthenticated) {
+          setIsPinLocked(true);
+        }
       }, 15 * 60 * 1000);
     };
 
@@ -180,7 +202,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timer);
       events.forEach((ev) => window.removeEventListener(ev, resetTimer));
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const unlockWithPin = async (pin: string): Promise<boolean> => {
     try {
@@ -213,9 +235,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setCurrentUser(data.user);
+        setIsAuthenticated(true);
+        await refreshData();
       }
     } catch (err) {
       console.error("Partner switch error:", err);
+    }
+  };
+
+  const updateProfile = async (nickname: string, avatarUrl: string, themeAccent: string) => {
+    try {
+      const res = await fetch("/api/users/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nickname, avatarUrl, themeAccent }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentUser(data.user);
+        triggerConfetti();
+      }
+    } catch (err) {
+      console.error("Update profile error:", err);
     }
   };
 
@@ -240,7 +281,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         await refreshData();
-        if (data.roundupSwept > 0) {
+        if (data.roundupSwept > 0 || txData.type === "savings") {
           triggerConfetti();
         }
         return { success: true, roundupSwept: data.roundupSwept };
@@ -319,6 +360,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentUser,
         setCurrentUser,
+        isAuthenticated,
         currency,
         setCurrency,
         transactions,
@@ -330,6 +372,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         isOffline,
         pendingOfflineCount,
         isPinLocked,
+        isProfileOpen,
+        openProfile,
+        closeProfile,
         unlockWithPin,
         lockSession,
         refreshData,
@@ -339,6 +384,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         boostGoal,
         toggleGoalRoundup,
         switchPartner,
+        updateProfile,
         triggerConfetti,
       }}
     >

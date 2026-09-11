@@ -25,6 +25,7 @@ export function TopHeader() {
     lockSession,
     refreshData,
     isLoading,
+    openProfile,
   } = useApp();
 
   const [showCurrencyMenu, setShowCurrencyMenu] = useState(false);
@@ -44,9 +45,8 @@ export function TopHeader() {
                 Couples
               </span>
             </div>
-            {/* Active Partner Pill Switcher */}
-            <div className="flex items-center space-x-1 mt-0.5">
-              <span className="text-xs text-muted-foreground">Active:</span>
+            {/* Active Partner Pill Switcher & Profile Personalize */}
+            <div className="flex items-center space-x-1.5 mt-0.5">
               <button
                 onClick={() =>
                   switchPartner(
@@ -60,12 +60,29 @@ export function TopHeader() {
                 }`}
                 title="Tap to switch partner perspective"
               >
-                <span
-                  className="w-1.5 h-1.5 rounded-full animate-pulse"
-                  style={{ backgroundColor: currentUser.themeAccent }}
-                />
-                <span>{currentUser.name.split(" ")[0]}</span>
+                {currentUser.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={currentUser.avatarUrl}
+                    alt="Avatar"
+                    className="w-3.5 h-3.5 rounded-full object-cover"
+                  />
+                ) : (
+                  <span
+                    className="w-1.5 h-1.5 rounded-full animate-pulse"
+                    style={{ backgroundColor: currentUser.themeAccent }}
+                  />
+                )}
+                <span>{currentUser.nickname || currentUser.name.split(" ")[0]}</span>
                 <Users className="w-3 h-3 ml-0.5 opacity-60" />
+              </button>
+
+              <button
+                onClick={openProfile}
+                className="text-[10px] text-muted-foreground hover:text-primary underline px-1 py-0.5 rounded"
+                title="Personalize nickname and photo"
+              >
+                Edit
               </button>
             </div>
           </div>

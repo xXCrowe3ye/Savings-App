@@ -27,9 +27,21 @@ function getSpreadsheetId(): string {
 
 // Tab Headers definition
 export const TAB_HEADERS = {
-  Users: ["id", "partnerKey", "name", "email", "passwordHash", "pinHash", "themeAccent", "createdAt"],
+  Users: [
+    "id",
+    "partnerKey",
+    "name",
+    "nickname",
+    "email",
+    "avatarUrl",
+    "passwordHash",
+    "pinHash",
+    "themeAccent",
+    "createdAt",
+  ],
   Transactions: [
     "id",
+    "type",
     "date",
     "amount",
     "category",
@@ -37,6 +49,7 @@ export const TAB_HEADERS = {
     "paidBy",
     "splitRatio",
     "partnerASplitPercentage",
+    "goalId",
     "isRecurring",
     "needsApproval",
     "approvedByPartner",

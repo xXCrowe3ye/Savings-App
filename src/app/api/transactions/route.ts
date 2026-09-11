@@ -6,6 +6,7 @@ import { sanitizeHtml, stripFormulaTriggers } from "@/lib/sanitize";
 import { calculateRoundUp } from "@/lib/utils";
 
 const createTransactionSchema = z.object({
+  type: z.enum(["expense", "savings", "income"]).default("expense"),
   date: z.string().min(1),
   amount: z.number().positive(),
   category: z.string().min(1),
@@ -13,6 +14,7 @@ const createTransactionSchema = z.object({
   paidBy: z.enum(["partner_a", "partner_b"]),
   splitRatio: z.enum(["50/50", "60/40", "70/30", "100/0", "0/100", "custom"]).default("50/50"),
   partnerASplitPercentage: z.number().min(0).max(100).optional(),
+  goalId: z.string().optional(),
   receiptUrl: z.string().optional(),
   notes: z.string().optional(),
   isRecurring: z.boolean().optional(),
@@ -44,11 +46,12 @@ export async function POST(req: Request) {
     const sanitizedDescription = stripFormulaTriggers(sanitizeHtml(data.description));
     const sanitizedNotes = data.notes ? stripFormulaTriggers(sanitizeHtml(data.notes)) : "";
 
-    // High expense approval badge threshold: >= $200
-    const needsApproval = data.amount >= 200;
+    // High expense approval badge threshold: >= $200 (for expenses only)
+    const needsApproval = data.type === "expense" && data.amount >= 200;
     const approvedByPartner = !needsApproval;
 
     const newTx = await db.addTransaction({
+      type: data.type,
       date: data.date,
       amount: data.amount,
       category: data.category,
@@ -56,6 +59,7 @@ export async function POST(req: Request) {
       paidBy: data.paidBy,
       splitRatio: data.splitRatio,
       partnerASplitPercentage: data.partnerASplitPercentage ?? 50,
+      goalId: data.goalId,
       isRecurring: data.isRecurring || false,
       needsApproval,
       approvedByPartner,
@@ -63,21 +67,44 @@ export async function POST(req: Request) {
       notes: sanitizedNotes,
     });
 
-    // Round-up Savings Engine sweep check:
-    // Check if any goal has roundupEnabled
-    const goals = await db.getGoals();
-    const activeRoundupGoal = goals.find((g) => g.roundupEnabled && g.status === "active");
-
-    let sweepAmount = 0;
-    if (activeRoundupGoal) {
-      sweepAmount = calculateRoundUp(data.amount, activeRoundupGoal.roundupUnit || 1);
-      if (sweepAmount > 0) {
+    // If type is savings deposit and a goal is targeted, credit the goal immediately!
+    if (data.type === "savings" && data.goalId) {
+      const goals = await db.getGoals();
+      const targetGoal = goals.find((g) => g.id === data.goalId);
+      if (targetGoal) {
         const isPartnerA = data.paidBy === "partner_a";
-        await db.updateGoal(activeRoundupGoal.id, {
-          currentAmount: activeRoundupGoal.currentAmount + sweepAmount,
-          partnerAContribution: activeRoundupGoal.partnerAContribution + (isPartnerA ? sweepAmount : 0),
-          partnerBContribution: activeRoundupGoal.partnerBContribution + (!isPartnerA ? sweepAmount : 0),
+        const is5050 = data.splitRatio === "50/50";
+        const addA = is5050 ? data.amount / 2 : isPartnerA ? data.amount : 0;
+        const addB = is5050 ? data.amount / 2 : !isPartnerA ? data.amount : 0;
+
+        await db.updateGoal(targetGoal.id, {
+          currentAmount: targetGoal.currentAmount + data.amount,
+          partnerAContribution: targetGoal.partnerAContribution + addA,
+          partnerBContribution: targetGoal.partnerBContribution + addB,
+          status: targetGoal.currentAmount + data.amount >= targetGoal.targetAmount ? "achieved" : targetGoal.status,
         });
+      }
+    }
+
+    // Round-up Savings Engine sweep check (for expenses):
+    let sweepAmount = 0;
+    let activeRoundupGoalTitle: string | undefined;
+
+    if (data.type === "expense") {
+      const goals = await db.getGoals();
+      const activeRoundupGoal = goals.find((g) => g.roundupEnabled && g.status === "active");
+
+      if (activeRoundupGoal) {
+        sweepAmount = calculateRoundUp(data.amount, activeRoundupGoal.roundupUnit || 1);
+        if (sweepAmount > 0) {
+          activeRoundupGoalTitle = activeRoundupGoal.title;
+          const isPartnerA = data.paidBy === "partner_a";
+          await db.updateGoal(activeRoundupGoal.id, {
+            currentAmount: activeRoundupGoal.currentAmount + sweepAmount,
+            partnerAContribution: activeRoundupGoal.partnerAContribution + (isPartnerA ? sweepAmount : 0),
+            partnerBContribution: activeRoundupGoal.partnerBContribution + (!isPartnerA ? sweepAmount : 0),
+          });
+        }
       }
     }
 
@@ -85,7 +112,7 @@ export async function POST(req: Request) {
       success: true,
       transaction: newTx,
       roundupSwept: sweepAmount,
-      roundupGoal: activeRoundupGoal?.title,
+      roundupGoal: activeRoundupGoalTitle,
     });
   } catch (error: any) {
     console.error("Add transaction error:", error);

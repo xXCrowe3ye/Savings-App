@@ -8,6 +8,8 @@ export type RecurrenceFrequency = "weekly" | "monthly" | "yearly";
 
 export type CurrencyCode = "USD" | "EUR" | "GBP" | "PHP" | "JPY";
 
+export type TransactionType = "expense" | "savings" | "income";
+
 export interface CurrencyConfig {
   code: CurrencyCode;
   symbol: string;
@@ -18,6 +20,7 @@ export interface UserProfile {
   id: string;
   partnerKey: PartnerKey;
   name: string;
+  nickname?: string;
   email: string;
   avatarUrl?: string;
   themeAccent: string; // Hex or color name
@@ -26,6 +29,7 @@ export interface UserProfile {
 
 export interface Transaction {
   id: string;
+  type?: TransactionType; // expense (default) or savings deposit
   date: string; // YYYY-MM-DD
   amount: number;
   category: string;
@@ -33,6 +37,7 @@ export interface Transaction {
   paidBy: PartnerKey;
   splitRatio: SplitRatio;
   partnerASplitPercentage?: number; // e.g. 50
+  goalId?: string; // If type === "savings", which goal was funded
   isRecurring?: boolean;
   needsApproval?: boolean;
   approvedByPartner?: boolean;
@@ -92,7 +97,7 @@ export interface Settlement {
   fromPartner: PartnerKey;
   toPartner: PartnerKey;
   amount: number;
-  status: "pending" | "settled";
+  status: "settled" | "pending";
   note?: string;
 }
 
