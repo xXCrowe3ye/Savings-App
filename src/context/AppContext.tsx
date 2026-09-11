@@ -45,6 +45,10 @@ interface AppContextType {
   boostGoal: (goalId: string, amount: number, partnerKey: PartnerKey | "both") => Promise<void>;
   toggleGoalRoundup: (goalId: string, enabled: boolean, unit?: 1 | 5) => Promise<void>;
   logout: () => Promise<void>;
+  isIncomeModalOpen: boolean;
+  openIncomeModal: () => void;
+  closeIncomeModal: () => void;
+  updateSharedIncome: (income: number) => Promise<void>;
   updateProfile: (nickname: string, avatarUrl: string, themeAccent: string) => Promise<void>;
   triggerConfetti: () => void;
 }
@@ -76,9 +80,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [pendingOfflineCount, setPendingOfflineCount] = useState(0);
   const [isPinLocked, setIsPinLocked] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
 
   const openProfile = () => setIsProfileOpen(true);
   const closeProfile = () => setIsProfileOpen(false);
+
+  const openIncomeModal = () => setIsIncomeModalOpen(true);
+  const closeIncomeModal = () => setIsIncomeModalOpen(false);
 
   const partnerAName =
     currentUser.partnerKey === "partner_a"
@@ -374,6 +382,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateSharedIncome = async (income: number) => {
+    try {
+      const res = await fetch("/api/settings/income", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ income }),
+      });
+      if (res.ok) {
+        await refreshData();
+        triggerConfetti();
+      }
+    } catch (err) {
+      console.error("Update shared income error:", err);
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -398,6 +422,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         isProfileOpen,
         openProfile,
         closeProfile,
+        isIncomeModalOpen,
+        openIncomeModal,
+        closeIncomeModal,
+        updateSharedIncome,
         unlockWithPin,
         lockSession,
         refreshData,

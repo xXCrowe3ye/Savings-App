@@ -8,6 +8,8 @@ import {
   DashboardMetrics,
   PartnerKey,
 } from "@/types";
+import { isSupabaseConfigured } from "./supabase/client";
+import * as supabaseService from "./supabase/supabaseService";
 import { isGoogleSheetsConfigured } from "./google/client";
 import * as sheets from "./google/sheetsService";
 import {
@@ -28,6 +30,7 @@ class InMemoryStore {
   goals: SavingsGoal[] = [...INITIAL_GOALS];
   recurring: RecurringBill[] = [...INITIAL_RECURRING];
   settlements: Settlement[] = [...INITIAL_SETTLEMENTS];
+  sharedIncome: number = 7800;
 }
 
 // Global singleton across serverless invocations in dev
@@ -37,10 +40,18 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export const db = {
+  isSupabase: () => isSupabaseConfigured(),
   isLiveGoogleSheets: () => isGoogleSheetsConfigured(),
 
   // Users
   async getUsers(): Promise<UserProfile[]> {
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.getSupabaseUsers();
+      } catch (err) {
+        console.warn("Supabase getUsers failed, falling back:", err);
+      }
+    }
     if (isGoogleSheetsConfigured()) {
       try {
         return await sheets.getSheetRows<UserProfile>("Users");
@@ -56,8 +67,36 @@ export const db = {
     return users.find((u) => u.partnerKey === partnerKey);
   },
 
+  async updateUser(id: string, updates: Partial<UserProfile>): Promise<void> {
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseService.updateSupabaseUser(id, updates);
+      } catch (err) {
+        console.warn("Supabase updateUser failed:", err);
+      }
+    }
+    if (isGoogleSheetsConfigured()) {
+      try {
+        await sheets.updateSheetRow("Users", id, updates);
+      } catch (err) {
+        console.warn("Google Sheets updateUser failed:", err);
+      }
+    }
+    const idx = globalStore.users.findIndex((u: UserProfile) => u.id === id);
+    if (idx !== -1) {
+      globalStore.users[idx] = { ...globalStore.users[idx], ...updates };
+    }
+  },
+
   // Transactions
   async getTransactions(): Promise<Transaction[]> {
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.getSupabaseTransactions();
+      } catch (err) {
+        console.warn("Supabase getTransactions failed, falling back:", err);
+      }
+    }
     if (isGoogleSheetsConfigured()) {
       try {
         const txs = await sheets.getSheetRows<Transaction>("Transactions");
@@ -81,6 +120,14 @@ export const db = {
       needsApproval: tx.amount >= 200 && tx.approvedByPartner !== true,
     };
 
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.addSupabaseTransaction(tx);
+      } catch (err) {
+        console.warn("Supabase addTransaction failed, saving locally:", err);
+      }
+    }
+
     if (isGoogleSheetsConfigured()) {
       try {
         await sheets.appendSheetRow("Transactions", newTx);
@@ -95,6 +142,14 @@ export const db = {
   },
 
   async updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction> {
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.updateSupabaseTransaction(id, updates);
+      } catch (err) {
+        console.warn("Supabase updateTransaction failed:", err);
+      }
+    }
+
     if (isGoogleSheetsConfigured()) {
       try {
         await sheets.updateSheetRow("Transactions", id, updates);
@@ -112,6 +167,15 @@ export const db = {
   },
 
   async deleteTransaction(id: string): Promise<void> {
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseService.deleteSupabaseTransaction(id);
+        return;
+      } catch (err) {
+        console.warn("Supabase deleteTransaction failed:", err);
+      }
+    }
+
     if (isGoogleSheetsConfigured()) {
       try {
         await sheets.deleteSheetRow("Transactions", id);
@@ -126,6 +190,13 @@ export const db = {
 
   // Budgets
   async getBudgets(): Promise<CategoryBudget[]> {
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.getSupabaseBudgets();
+      } catch (err) {
+        console.warn("Supabase getBudgets failed, falling back:", err);
+      }
+    }
     if (isGoogleSheetsConfigured()) {
       try {
         return await sheets.getSheetRows<CategoryBudget>("Budgets");
@@ -137,6 +208,13 @@ export const db = {
   },
 
   async updateBudget(id: string, updates: Partial<CategoryBudget>): Promise<CategoryBudget> {
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.updateSupabaseBudget(id, updates);
+      } catch (err) {
+        console.warn("Supabase updateBudget failed:", err);
+      }
+    }
     if (isGoogleSheetsConfigured()) {
       try {
         await sheets.updateSheetRow("Budgets", id, updates);
@@ -154,6 +232,13 @@ export const db = {
 
   // Goals
   async getGoals(): Promise<SavingsGoal[]> {
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.getSupabaseGoals();
+      } catch (err) {
+        console.warn("Supabase getGoals failed, falling back:", err);
+      }
+    }
     if (isGoogleSheetsConfigured()) {
       try {
         return await sheets.getSheetRows<SavingsGoal>("Goals");
@@ -169,37 +254,86 @@ export const db = {
       ...goal,
       id: `goal_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       createdAt: new Date().toISOString(),
+      currentAmount: goal.currentAmount || 0,
+      partnerAContribution: goal.partnerAContribution || 0,
+      partnerBContribution: goal.partnerBContribution || 0,
     };
+
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.addSupabaseGoal(goal);
+      } catch (err) {
+        console.warn("Supabase addGoal failed:", err);
+      }
+    }
+
     if (isGoogleSheetsConfigured()) {
       try {
         await sheets.appendSheetRow("Goals", newGoal);
         return newGoal;
       } catch (err) {
-        console.warn("Google Sheets write failed:", err);
+        console.warn("Google Sheets addGoal failed:", err);
       }
     }
+
     globalStore.goals.push(newGoal);
     return newGoal;
   },
 
   async updateGoal(id: string, updates: Partial<SavingsGoal>): Promise<SavingsGoal> {
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.updateSupabaseGoal(id, updates);
+      } catch (err) {
+        console.warn("Supabase updateGoal failed:", err);
+      }
+    }
+
     if (isGoogleSheetsConfigured()) {
       try {
         await sheets.updateSheetRow("Goals", id, updates);
       } catch (err) {
-        console.warn("Google Sheets update failed:", err);
+        console.warn("Google Sheets updateGoal failed:", err);
       }
     }
-    const idx = globalStore.goals.findIndex((g: SavingsGoal) => g.id === id);
-    if (idx !== -1) {
-      globalStore.goals[idx] = { ...globalStore.goals[idx], ...updates };
-      return globalStore.goals[idx];
+
+    const index = globalStore.goals.findIndex((g: SavingsGoal) => g.id === id);
+    if (index !== -1) {
+      globalStore.goals[index] = { ...globalStore.goals[index], ...updates };
+      return globalStore.goals[index];
     }
     throw new Error(`Goal ${id} not found`);
   },
 
+  async deleteGoal(id: string): Promise<void> {
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseService.deleteSupabaseGoal(id);
+        return;
+      } catch (err) {
+        console.warn("Supabase deleteGoal failed:", err);
+      }
+    }
+
+    if (isGoogleSheetsConfigured()) {
+      try {
+        await sheets.deleteSheetRow("Goals", id);
+      } catch (err) {
+        console.warn("Google Sheets deleteGoal failed:", err);
+      }
+    }
+    globalStore.goals = globalStore.goals.filter((g: SavingsGoal) => g.id !== id);
+  },
+
   // Recurring
   async getRecurring(): Promise<RecurringBill[]> {
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.getSupabaseRecurring();
+      } catch (err) {
+        console.warn("Supabase getRecurring failed, falling back:", err);
+      }
+    }
     if (isGoogleSheetsConfigured()) {
       try {
         return await sheets.getSheetRows<RecurringBill>("Recurring");
@@ -210,8 +344,87 @@ export const db = {
     return globalStore.recurring;
   },
 
-  // Settlements / IOU
+  async addRecurring(bill: Omit<RecurringBill, "id">): Promise<RecurringBill> {
+    const newBill: RecurringBill = {
+      ...bill,
+      id: `rec_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.addSupabaseRecurring(bill);
+      } catch (err) {
+        console.warn("Supabase addRecurring failed:", err);
+      }
+    }
+
+    if (isGoogleSheetsConfigured()) {
+      try {
+        await sheets.appendSheetRow("Recurring", newBill);
+        return newBill;
+      } catch (err) {
+        console.warn("Google Sheets addRecurring failed:", err);
+      }
+    }
+
+    globalStore.recurring.push(newBill);
+    return newBill;
+  },
+
+  async updateRecurring(id: string, updates: Partial<RecurringBill>): Promise<RecurringBill> {
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.updateSupabaseRecurring(id, updates);
+      } catch (err) {
+        console.warn("Supabase updateRecurring failed:", err);
+      }
+    }
+
+    if (isGoogleSheetsConfigured()) {
+      try {
+        await sheets.updateSheetRow("Recurring", id, updates);
+      } catch (err) {
+        console.warn("Google Sheets updateRecurring failed:", err);
+      }
+    }
+
+    const index = globalStore.recurring.findIndex((r: RecurringBill) => r.id === id);
+    if (index !== -1) {
+      globalStore.recurring[index] = { ...globalStore.recurring[index], ...updates };
+      return globalStore.recurring[index];
+    }
+    throw new Error(`Recurring bill ${id} not found`);
+  },
+
+  async deleteRecurring(id: string): Promise<void> {
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseService.deleteSupabaseRecurring(id);
+        return;
+      } catch (err) {
+        console.warn("Supabase deleteRecurring failed:", err);
+      }
+    }
+
+    if (isGoogleSheetsConfigured()) {
+      try {
+        await sheets.deleteSheetRow("Recurring", id);
+      } catch (err) {
+        console.warn("Google Sheets deleteRecurring failed:", err);
+      }
+    }
+    globalStore.recurring = globalStore.recurring.filter((r: RecurringBill) => r.id !== id);
+  },
+
+  // Settlements
   async getSettlements(): Promise<Settlement[]> {
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.getSupabaseSettlements();
+      } catch (err) {
+        console.warn("Supabase getSettlements failed, falling back:", err);
+      }
+    }
     if (isGoogleSheetsConfigured()) {
       try {
         return await sheets.getSheetRows<Settlement>("Settlements");
@@ -223,32 +436,62 @@ export const db = {
   },
 
   async addSettlement(settlement: Omit<Settlement, "id">): Promise<Settlement> {
-    const newS: Settlement = {
+    const newSettlement: Settlement = {
       ...settlement,
-      id: `stl_${Date.now()}`,
+      id: `stl_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
     };
-    if (isGoogleSheetsConfigured()) {
+
+    if (isSupabaseConfigured()) {
       try {
-        await sheets.appendSheetRow("Settlements", newS);
-        return newS;
+        return await supabaseService.addSupabaseSettlement(settlement);
       } catch (err) {
-        console.warn("Google Sheets write failed:", err);
+        console.warn("Supabase addSettlement failed:", err);
       }
     }
-    globalStore.settlements.unshift(newS);
-    return newS;
+
+    if (isGoogleSheetsConfigured()) {
+      try {
+        await sheets.appendSheetRow("Settlements", newSettlement);
+        return newSettlement;
+      } catch (err) {
+        console.warn("Google Sheets addSettlement failed:", err);
+      }
+    }
+
+    globalStore.settlements.push(newSettlement);
+    return newSettlement;
+  },
+
+  // Shared Income Settings
+  async getSharedIncome(): Promise<number> {
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.getSupabaseSharedIncome();
+      } catch {}
+    }
+    return globalStore.sharedIncome || 7800;
+  },
+
+  async updateSharedIncome(income: number): Promise<void> {
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseService.updateSupabaseSharedIncome(income);
+      } catch (err) {
+        console.warn("Supabase updateSharedIncome failed:", err);
+      }
+    }
+    globalStore.sharedIncome = income;
   },
 
   // Calculated Dashboard Metrics
   async getDashboardMetrics(): Promise<DashboardMetrics> {
-    const [txs, budgets, goals, settlements] = await Promise.all([
+    const [txs, budgets, goals, settlements, totalIncome] = await Promise.all([
       db.getTransactions(),
       db.getBudgets(),
       db.getGoals(),
       db.getSettlements(),
+      db.getSharedIncome(),
     ]);
-
-    const totalIncome = 7800; // Shared combined monthly income baseline
 
     // Total expenses this month
     const totalExpenses = txs.reduce((acc, t) => acc + (t.amount || 0), 0);
@@ -280,11 +523,8 @@ export const db = {
     const daysLeft = getDaysRemainingInMonth();
     const safeToSpendDaily = Math.round((budgetRemaining / daysLeft) * 100) / 100;
 
-    // IOU calculation:
-    // For every shared transaction:
-    // If Partner A paid $100 on a 50/50 split, Partner B owes A $50.
-    // Factor in settled amounts from Settlements tab.
-    let balanceAtoB = 0; // positive means B owes A, negative means A owes B
+    // IOU calculation
+    let balanceAtoB = 0;
     for (const t of txs) {
       const splitA =
         t.splitRatio === "50/50"
@@ -303,10 +543,8 @@ export const db = {
       const shareB = t.amount - shareA;
 
       if (t.paidBy === "partner_a") {
-        // Partner A paid, B owes their shareB
         balanceAtoB += shareB;
       } else {
-        // Partner B paid, A owes their shareA
         balanceAtoB -= shareA;
       }
     }

@@ -1,25 +1,35 @@
 # 🕊️ Babi-Savings — Shared Couples Finance & Budgeting Platform
 
-> An advanced, mobile-first web application designed specifically for couples to manage joint finances, category budgets, recurring subscriptions, and shared savings goals using Google Sheets API v4 as a headless database, deployed on Vercel.
+> An advanced, mobile-first web application designed specifically for couples to manage joint finances, category budgets, recurring subscriptions, and shared savings goals with seamless Supabase PostgreSQL backend integration (with automatic fallback to Google Sheets or in-memory store), deployed on Vercel.
 
 ---
 
 ## 🌟 Key Architecture & Highlights
 
 - **Framework**: Next.js 15 (App Router, React 19, TypeScript).
-- **Headless Database**: Google Sheets API v4 via `googleapis` with server-side proxy isolation.
-- **Dual-Backend Provider**: Seamlessly boots with Google Sheets or fallback store, automatically creating required tabs and headers.
-- **Formula Injection Defense**: Strips and escapes dangerous formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`) before persisting to Google Sheets.
-- **Receipt Attachments**: Direct proxy to Google Drive API with automatic share permissions and thumbnail generation.
+- **Primary Database**: **Supabase (PostgreSQL)** — zero quota limits, real-time sync, ultra-fast queries, and relational integrity.
+- **Dual-Backend Provider**: Seamlessly boots with Supabase or Google Sheets API v4 or fallback store.
+- **Dynamic Shared Income**: Couples can view and update combined monthly income directly from the UI, syncing runway calculations and savings rates across both devices.
+- **Formula Injection Defense**: Strips and escapes dangerous formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`) when syncing to Google Sheets.
+- **Receipt Attachments**: Direct proxy to Google Drive API or cloud storage with automatic share permissions.
 - **PWA & Offline Capability**: Service worker caching and IndexedDB offline transaction queue that auto-syncs when reconnecting.
 - **Security**: `HttpOnly`, `SameSite=Strict`, `Secure` JWT session cookies, authorized Google SSO restriction, and 15-minute PIN unlock security gate.
 - **Couple Collaboration**: Dedicated partner profile customization, large expense approval badges (>= $200), savings deposits, and automatic IOU balance calculation for non-50/50 splits.
 
 ---
 
-## 📊 Complete Google Sheets Database Schema
+## 🚀 Setting up Supabase Database (Recommended)
 
-Create a new Google Spreadsheet and share it with your Service Account Email with **Editor** permissions. Babi-Savings automatically verifies and seeds the header rows across these 6 tabs:
+1. Create a free project at [Supabase.com](https://supabase.com).
+2. Go to the **SQL Editor** in your Supabase dashboard.
+3. Open [`supabase/schema.sql`](file:///c:/Users/SpikeSpiegel/Documents/savings%20%20web/supabase/schema.sql) in this repository, paste the entire SQL script, and click **Run**.
+4. Go to **Project Settings > API** and copy:
+   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
+   - `anon public key` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `service_role secret key` → `SUPABASE_SERVICE_ROLE_KEY`
+5. Add these environment variables to `.env.local` or your Vercel project settings.
+
+---
 
 ### 1. Tab: `Users`
 | Header | Type | Description |
