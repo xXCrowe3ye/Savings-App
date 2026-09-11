@@ -29,8 +29,12 @@ export async function PATCH(req: Request) {
     }
 
     if (db.isLiveGoogleSheets()) {
-      const sheets = await import("@/lib/google/sheetsService");
-      await sheets.updateSheetRow("Users", user.id, updates);
+      try {
+        const sheets = await import("@/lib/google/sheetsService");
+        await sheets.updateSheetRow("Users", user.id, updates);
+      } catch (err) {
+        console.warn("Could not sync profile to Sheets immediately:", err);
+      }
     }
 
     Object.assign(user, updates);
