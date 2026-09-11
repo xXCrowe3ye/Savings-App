@@ -493,35 +493,47 @@ export const db = {
       db.getSharedIncome(),
     ]);
 
-    // Filter strictly to expenses for spend metrics (exclude savings deposits)
+    const currentMonthPrefix = new Date().toISOString().slice(0, 7);
+
+    // Filter strictly to current month expenses for spend metrics (exclude savings deposits)
     const expenseTxs = txs.filter((t) => (t.type || "expense") === "expense");
+    const currentMonthExpenseTxs = expenseTxs.filter((t) => t.date.startsWith(currentMonthPrefix));
 
     // Total expenses this month
-    const totalExpenses = expenseTxs.reduce((acc, t) => acc + (t.amount || 0), 0);
+    const totalExpenses = currentMonthExpenseTxs.reduce((acc, t) => acc + (t.amount || 0), 0);
 
-    // Partner breakdown (expenses only)
-    const partnerASpent = expenseTxs
+    // Partner breakdown (current month expenses)
+    const partnerASpent = currentMonthExpenseTxs
       .filter((t) => t.paidBy === "partner_a")
       .reduce((acc, t) => acc + (t.amount || 0), 0);
-    const partnerBSpent = expenseTxs
+    const partnerBSpent = currentMonthExpenseTxs
       .filter((t) => t.paidBy === "partner_b")
       .reduce((acc, t) => acc + (t.amount || 0), 0);
 
     // Total savings across goals
     const combinedNetSavings = goals.reduce((acc, g) => acc + (g.currentAmount || 0), 0);
 
-    // Savings rate
+    // Savings rate (Current month cash surplus percentage)
     const savingsRate =
       totalIncome > 0
         ? Math.max(0, Math.round(((totalIncome - totalExpenses) / totalIncome) * 100))
         : 0;
 
-    // Safe to Spend Daily calculation
+    // Dynamic Category Spend aggregation for current month
+    const categorySpentMap: Record<string, number> = {};
+    for (const t of currentMonthExpenseTxs) {
+      categorySpentMap[t.category] = (categorySpentMap[t.category] || 0) + t.amount;
+    }
+
+    // Safe to Spend Daily calculation (real-time automated pacing)
     const totalMonthlyBudget = budgets.reduce(
       (acc, b) => acc + (b.monthlyLimit || 0) + (b.rolloverEnabled ? b.rolloverAccumulated || 0 : 0),
       0
     );
-    const totalBudgetSpent = budgets.reduce((acc, b) => acc + (b.spentAmount || 0), 0);
+    const totalBudgetSpent = budgets.reduce(
+      (acc, b) => acc + (categorySpentMap[b.category] !== undefined ? categorySpentMap[b.category] : b.spentAmount || 0),
+      0
+    );
     const budgetRemaining = Math.max(0, totalMonthlyBudget - totalBudgetSpent);
     const daysLeft = getDaysRemainingInMonth();
     const safeToSpendDaily = Math.round((budgetRemaining / daysLeft) * 100) / 100;

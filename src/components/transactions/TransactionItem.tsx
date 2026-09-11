@@ -115,10 +115,14 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
               >
                 {partnerName} {isSavings ? "saved" : "paid"}
               </span>
-              <span>•</span>
-              <span className="px-1.5 py-0.2 rounded bg-secondary text-[10px]">
-                {transaction.splitRatio}
-              </span>
+              {!isSavings && (
+                <>
+                  <span>•</span>
+                  <span className="px-1.5 py-0.2 rounded bg-secondary text-[10px]">
+                    {transaction.splitRatio}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>

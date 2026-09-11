@@ -251,6 +251,26 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
             </div>
           </div>
 
+          {/* Quick Amount Chips (for Savings) */}
+          {entryType === "savings" && (
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              {[25, 50, 100, 250, 500].map((quick) => (
+                <button
+                  type="button"
+                  key={quick}
+                  onClick={() => setAmount(quick.toString())}
+                  className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all ${
+                    amount === quick.toString()
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                      : "bg-secondary/40 border-border hover:bg-secondary text-foreground"
+                  }`}
+                >
+                  +{formatMoney(quick, currency)}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Goal Selector when Savings Deposit is active */}
           {entryType === "savings" ? (
             <div>
@@ -331,56 +351,110 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
             <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
               {entryType === "savings" ? "Deposited By" : "Paid By"}
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setPaidBy("partner_a")}
-                className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
-                  paidBy === "partner_a"
-                    ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                    : "bg-background border-border hover:bg-secondary"
-                }`}
-              >
-                <span>{partnerAName}</span>
-                {paidBy === "partner_a" && <Check className="w-3.5 h-3.5" />}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaidBy("partner_b")}
-                className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
-                  paidBy === "partner_b"
-                    ? "bg-teal-600 text-white border-teal-600 shadow-sm"
-                    : "bg-background border-border hover:bg-secondary"
-                }`}
-              >
-                <span>{partnerBName}</span>
-                {paidBy === "partner_b" && <Check className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-          </div>
-
-          {/* Split Ratio Selector */}
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
-              Contribution Split
-            </label>
-            <div className="grid grid-cols-5 gap-1">
-              {(["50/50", "60/40", "70/30", "100/0", "0/100"] as SplitRatio[]).map((ratio) => (
+            {entryType === "savings" ? (
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  key={ratio}
-                  onClick={() => setSplitRatio(ratio)}
-                  className={`py-1.5 text-[11px] font-medium rounded-lg border transition-all ${
-                    splitRatio === ratio
-                      ? "bg-foreground text-background border-foreground font-bold shadow-xs"
-                      : "bg-secondary/40 border-border hover:bg-secondary text-foreground"
+                  onClick={() => {
+                    setPaidBy("partner_a");
+                    setSplitRatio("100/0");
+                  }}
+                  className={`py-2 px-2 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1 ${
+                    paidBy === "partner_a" && splitRatio === "100/0"
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                      : "bg-background border-border hover:bg-secondary"
                   }`}
                 >
-                  {ratio}
+                  <span>{partnerAName}</span>
+                  {paidBy === "partner_a" && splitRatio === "100/0" && <Check className="w-3.5 h-3.5" />}
                 </button>
-              ))}
-            </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaidBy("partner_b");
+                    setSplitRatio("0/100");
+                  }}
+                  className={`py-2 px-2 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1 ${
+                    paidBy === "partner_b" && splitRatio === "0/100"
+                      ? "bg-teal-600 text-white border-teal-600 shadow-sm"
+                      : "bg-background border-border hover:bg-secondary"
+                  }`}
+                >
+                  <span>{partnerBName}</span>
+                  {paidBy === "partner_b" && splitRatio === "0/100" && <Check className="w-3.5 h-3.5" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaidBy(currentUser.partnerKey);
+                    setSplitRatio("50/50");
+                  }}
+                  className={`py-2 px-2 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1 ${
+                    splitRatio === "50/50"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-background border-border hover:bg-secondary"
+                  }`}
+                >
+                  <span>Joint (50/50)</span>
+                  {splitRatio === "50/50" && <Check className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaidBy("partner_a")}
+                  className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                    paidBy === "partner_a"
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                      : "bg-background border-border hover:bg-secondary"
+                  }`}
+                >
+                  <span>{partnerAName}</span>
+                  {paidBy === "partner_a" && <Check className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaidBy("partner_b")}
+                  className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                    paidBy === "partner_b"
+                      ? "bg-teal-600 text-white border-teal-600 shadow-sm"
+                      : "bg-background border-border hover:bg-secondary"
+                  }`}
+                >
+                  <span>{partnerBName}</span>
+                  {paidBy === "partner_b" && <Check className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            )}
           </div>
+
+          {/* Split Ratio Selector (ONLY for Expenses, hidden for Savings) */}
+          {entryType === "expense" && (
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
+                Expense Split Ratio
+              </label>
+              <div className="grid grid-cols-5 gap-1">
+                {(["50/50", "60/40", "70/30", "100/0", "0/100"] as SplitRatio[]).map((ratio) => (
+                  <button
+                    type="button"
+                    key={ratio}
+                    onClick={() => setSplitRatio(ratio)}
+                    className={`py-1.5 text-[11px] font-medium rounded-lg border transition-all ${
+                      splitRatio === ratio
+                        ? "bg-foreground text-background border-foreground font-bold shadow-xs"
+                        : "bg-secondary/40 border-border hover:bg-secondary text-foreground"
+                    }`}
+                  >
+                    {ratio}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Receipt Attachment (Optional) */}
           <div className="flex items-center justify-between pt-1">

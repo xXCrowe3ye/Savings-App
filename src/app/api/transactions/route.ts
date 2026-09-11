@@ -72,10 +72,18 @@ export async function POST(req: Request) {
       const goals = await db.getGoals();
       const targetGoal = goals.find((g) => g.id === data.goalId);
       if (targetGoal) {
-        const isPartnerA = data.paidBy === "partner_a";
-        const is5050 = data.splitRatio === "50/50";
-        const addA = is5050 ? data.amount / 2 : isPartnerA ? data.amount : 0;
-        const addB = is5050 ? data.amount / 2 : !isPartnerA ? data.amount : 0;
+        let addA = 0;
+        let addB = 0;
+        if (data.splitRatio === "50/50") {
+          addA = data.amount / 2;
+          addB = data.amount / 2;
+        } else if (data.paidBy === "partner_a" || data.splitRatio === "100/0") {
+          addA = data.amount;
+          addB = 0;
+        } else {
+          addA = 0;
+          addB = data.amount;
+        }
 
         await db.updateGoal(targetGoal.id, {
           currentAmount: targetGoal.currentAmount + data.amount,

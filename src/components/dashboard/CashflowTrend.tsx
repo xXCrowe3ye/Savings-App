@@ -21,11 +21,11 @@ export function CashflowTrend() {
 
   // Month-over-month trend data
   const data = [
-    { month: "Apr", income: 7500, expenses: 3100 },
-    { month: "May", income: 7500, expenses: 2950 },
-    { month: "Jun", income: 7800, expenses: 3400 },
-    { month: "Jul", income: 7800, expenses: 2800 },
-    { month: "Aug", income: 7800, expenses: 3050 },
+    // { month: "Apr", income: 7500, expenses: 3100 },
+    // { month: "May", income: 7500, expenses: 2950 },
+    // { month: "Jun", income: 7800, expenses: 3400 },
+    // { month: "Jul", income: 7800, expenses: 2800 },
+    // { month: "Aug", income: 7800, expenses: 3050 },
     { month: "Sep (Now)", income: currentIncome, expenses: currentExpenses },
   ];
 
