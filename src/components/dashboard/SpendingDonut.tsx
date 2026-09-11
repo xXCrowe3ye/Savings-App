@@ -19,11 +19,13 @@ const COLORS = [
 export function SpendingDonut() {
   const { transactions, currency } = useApp();
 
-  // Aggregate by category
+  // Aggregate by category (expenses only)
   const categoryTotals: Record<string, number> = {};
-  transactions.forEach((tx) => {
-    categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + tx.amount;
-  });
+  transactions
+    .filter((tx) => (tx.type || "expense") === "expense")
+    .forEach((tx) => {
+      categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + tx.amount;
+    });
 
   const data = Object.entries(categoryTotals)
     .map(([name, value]) => ({ name, value: Math.round(value * 100) / 100 }))

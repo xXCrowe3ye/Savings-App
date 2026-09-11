@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   HeartPulse,
   Tag,
+  PiggyBank,
   Receipt,
   MessageSquare,
   ChevronDown,
@@ -43,7 +44,8 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
   const [newNote, setNewNote] = useState(transaction.notes || "");
   const [isSavingNote, setIsSavingNote] = useState(false);
 
-  const Icon = CATEGORY_ICONS[transaction.category] || Tag;
+  const isSavings = transaction.type === "savings";
+  const Icon = isSavings ? PiggyBank : CATEGORY_ICONS[transaction.category] || Tag;
   const isPartnerA = transaction.paidBy === "partner_a";
   const partnerName = getPartnerName(transaction.paidBy);
 
@@ -64,7 +66,9 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
   };
 
   return (
-    <div className="p-3 bg-card border rounded-2xl hover:border-primary/30 transition-all shadow-2xs">
+    <div className={`p-3 bg-card border rounded-2xl hover:border-primary/30 transition-all shadow-2xs ${
+      isSavings ? "border-emerald-500/30 bg-emerald-500/[0.02]" : ""
+    }`}>
       <div
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center justify-between cursor-pointer"
@@ -72,7 +76,9 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
         <div className="flex items-center space-x-3">
           <div
             className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-              isPartnerA
+              isSavings
+                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                : isPartnerA
                 ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
                 : "bg-teal-500/10 text-teal-600 dark:text-teal-400"
             }`}
@@ -85,6 +91,11 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
               <h5 className="font-semibold text-xs tracking-tight text-foreground">
                 {transaction.description}
               </h5>
+              {isSavings && (
+                <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                  Savings
+                </span>
+              )}
               {transaction.receiptUrl && (
                 <span title="Receipt attached">
                   <Receipt className="w-3.5 h-3.5 text-primary" />
@@ -102,7 +113,7 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
                     : "text-teal-600 dark:text-teal-400"
                 }`}
               >
-                {partnerName} paid
+                {partnerName} {isSavings ? "saved" : "paid"}
               </span>
               <span>•</span>
               <span className="px-1.5 py-0.2 rounded bg-secondary text-[10px]">
@@ -113,8 +124,8 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
         </div>
 
         <div className="text-right">
-          <div className="font-bold text-sm text-foreground">
-            {formatMoney(transaction.amount, currency)}
+          <div className={`font-bold text-sm ${isSavings ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"}`}>
+            {isSavings ? "+" : ""}{formatMoney(transaction.amount, currency)}
           </div>
           {transaction.needsApproval && !transaction.approvedByPartner && (
             <span className="text-[10px] text-amber-500 font-bold block">

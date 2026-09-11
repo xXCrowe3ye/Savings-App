@@ -493,14 +493,17 @@ export const db = {
       db.getSharedIncome(),
     ]);
 
-    // Total expenses this month
-    const totalExpenses = txs.reduce((acc, t) => acc + (t.amount || 0), 0);
+    // Filter strictly to expenses for spend metrics (exclude savings deposits)
+    const expenseTxs = txs.filter((t) => (t.type || "expense") === "expense");
 
-    // Partner breakdown
-    const partnerASpent = txs
+    // Total expenses this month
+    const totalExpenses = expenseTxs.reduce((acc, t) => acc + (t.amount || 0), 0);
+
+    // Partner breakdown (expenses only)
+    const partnerASpent = expenseTxs
       .filter((t) => t.paidBy === "partner_a")
       .reduce((acc, t) => acc + (t.amount || 0), 0);
-    const partnerBSpent = txs
+    const partnerBSpent = expenseTxs
       .filter((t) => t.paidBy === "partner_b")
       .reduce((acc, t) => acc + (t.amount || 0), 0);
 
@@ -523,9 +526,9 @@ export const db = {
     const daysLeft = getDaysRemainingInMonth();
     const safeToSpendDaily = Math.round((budgetRemaining / daysLeft) * 100) / 100;
 
-    // IOU calculation
+    // IOU calculation (for shared expenses only)
     let balanceAtoB = 0;
-    for (const t of txs) {
+    for (const t of expenseTxs) {
       const splitA =
         t.splitRatio === "50/50"
           ? 50
@@ -565,7 +568,7 @@ export const db = {
         ? { from: "partner_b", to: "partner_a", amount: Math.round(balanceAtoB * 100) / 100 }
         : { from: "partner_a", to: "partner_b", amount: Math.round(Math.abs(balanceAtoB) * 100) / 100 };
 
-    const pendingApprovalsCount = txs.filter(
+    const pendingApprovalsCount = expenseTxs.filter(
       (t) => t.needsApproval && !t.approvedByPartner
     ).length;
 

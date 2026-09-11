@@ -13,10 +13,10 @@ export async function GET() {
     const totalDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const monthProgressRatio = dayOfMonth / totalDaysInMonth; // e.g. 0.40 on day 12 of 30
 
-    // Compute actual spent per category from transactions of this month
+    // Compute actual spent per category from transactions of this month (expenses only)
     const categorySpentMap: Record<string, number> = {};
     for (const t of transactions) {
-      if (t.date.startsWith(currentMonthPrefix)) {
+      if ((t.type || "expense") === "expense" && t.date.startsWith(currentMonthPrefix)) {
         categorySpentMap[t.category] = (categorySpentMap[t.category] || 0) + t.amount;
       }
     }
