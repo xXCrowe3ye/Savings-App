@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { X, Camera, Sparkles, Check, Palette, User, Loader2 } from "lucide-react";
 
@@ -21,15 +21,35 @@ const THEME_ACCENTS = [
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { currentUser, updateProfile, refreshData } = useApp();
 
-  const [nickname, setNickname] = useState(currentUser.nickname || currentUser.name || "");
-  const [avatarUrl, setAvatarUrl] = useState(currentUser.avatarUrl || "");
-  const [themeAccent, setThemeAccent] = useState(currentUser.themeAccent || "#6366f1");
+  const [nickname, setNickname] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [themeAccent, setThemeAccent] = useState("#6366f1");
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (isOpen) {
+      const initialNickname =
+        currentUser.nickname ||
+        (currentUser.name !== "Partner A" && currentUser.name !== "Partner B"
+          ? currentUser.name
+          : "");
+      setNickname(initialNickname);
+      setAvatarUrl(currentUser.avatarUrl || "");
+      setThemeAccent(currentUser.themeAccent || "#6366f1");
+    }
+  }, [isOpen, currentUser]);
+
   if (!isOpen) return null;
+
+  const handleClose = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("babi_onboarding_shown", "true");
+    }
+    onClose();
+  };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -60,6 +80,9 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     e.preventDefault();
     setIsSaving(true);
     try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("babi_onboarding_shown", "true");
+      }
       await updateProfile(nickname, avatarUrl, themeAccent);
       await refreshData();
       onClose();
@@ -92,7 +115,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground"
           >
             <X className="w-5 h-5" />

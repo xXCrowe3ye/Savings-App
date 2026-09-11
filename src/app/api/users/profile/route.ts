@@ -28,15 +28,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (db.isLiveGoogleSheets()) {
-      try {
-        const sheets = await import("@/lib/google/sheetsService");
-        await sheets.updateSheetRow("Users", user.id, updates);
-      } catch (err) {
-        console.warn("Could not sync profile to Sheets immediately:", err);
-      }
-    }
-
+    await db.updateUser(user.id, updates);
     Object.assign(user, updates);
 
     return NextResponse.json({

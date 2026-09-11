@@ -138,9 +138,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (meData.partner) {
           setPartnerUser(meData.partner);
         }
-        // First login onboarding prompt: if user hasn't configured their nickname
+        // First login onboarding prompt: only prompt once per device/browser session
         if (meData.authenticated && meData.isFirstTime) {
-          setIsProfileOpen(true);
+          const alreadyPrompted =
+            typeof window !== "undefined" &&
+            localStorage.getItem("babi_onboarding_shown");
+          if (!alreadyPrompted) {
+            setIsProfileOpen(true);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("babi_onboarding_shown", "true");
+            }
+          }
         }
       }
 
