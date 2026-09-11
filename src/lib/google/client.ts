@@ -15,16 +15,37 @@ export function isGoogleDriveConfigured(): boolean {
   );
 }
 
-export function getGoogleAuth() {
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+/**
+ * Normalizes Google Private Key by removing surrounding quotes and unescaping \n
+ */
+export function normalizePrivateKey(rawKey: string): string {
+  if (!rawKey) return "";
+  let key = rawKey.trim();
 
-  if (!clientEmail || !privateKey) {
+  // Strip leading and trailing double or single quotes if wrapped in quotes on Vercel
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+
+  // Replace literal '\n' string with actual line breaks
+  key = key.replace(/\\n/g, "\n");
+
+  // Ensure header and footer are clean
+  return key.trim();
+}
+
+export function getGoogleAuth() {
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
+  const rawKey = process.env.GOOGLE_PRIVATE_KEY;
+
+  if (!clientEmail || !rawKey) {
     throw new Error("Google Service Account credentials missing in environment variables.");
   }
 
-  // Support escaped newlines in Vercel environment variables
-  privateKey = privateKey.replace(/\\n/g, "\n");
+  const privateKey = normalizePrivateKey(rawKey);
 
   return new google.auth.JWT({
     email: clientEmail,
