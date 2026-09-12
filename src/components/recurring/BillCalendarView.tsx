@@ -8,9 +8,10 @@ import { Calendar as CalendarIcon, Check } from "lucide-react";
 
 interface BillCalendarViewProps {
   bills: RecurringBill[];
+  onEdit?: (bill: RecurringBill) => void;
 }
 
-export function BillCalendarView({ bills }: BillCalendarViewProps) {
+export function BillCalendarView({ bills, onEdit }: BillCalendarViewProps) {
   const { currency, getPartnerName } = useApp();
   const todayDate = new Date().getDate();
   const [selectedDay, setSelectedDay] = useState<number>(todayDate);
@@ -80,7 +81,11 @@ export function BillCalendarView({ bills }: BillCalendarViewProps) {
             {selectedBills.map((b) => (
               <div
                 key={b.id}
-                className="p-2.5 rounded-xl bg-secondary/60 flex items-center justify-between text-xs"
+                onClick={() => onEdit?.(b)}
+                className={`p-2.5 rounded-xl bg-secondary/60 flex items-center justify-between text-xs ${
+                  onEdit ? "cursor-pointer hover:bg-secondary transition-all" : ""
+                }`}
+                title={onEdit ? "Click to edit bill" : undefined}
               >
                 <div>
                   <span className="font-bold text-foreground">{b.title}</span>
@@ -88,7 +93,10 @@ export function BillCalendarView({ bills }: BillCalendarViewProps) {
                     ({getPartnerName(b.paidBy)})
                   </span>
                 </div>
-                <span className="font-bold">{formatMoney(b.amount, currency)}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="font-bold">{formatMoney(b.amount, currency)}</span>
+                  {onEdit && <span className="text-[10px] text-primary">✎</span>}
+                </div>
               </div>
             ))}
           </div>

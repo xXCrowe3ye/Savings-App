@@ -316,9 +316,16 @@ export async function addSupabaseRecurring(bill: Omit<RecurringBill, "id">): Pro
 export async function updateSupabaseRecurring(id: string, updates: Partial<RecurringBill>): Promise<RecurringBill> {
   const supabase = getSupabaseClient();
   const dbUpdates: any = {};
+  if (updates.title !== undefined) dbUpdates.title = updates.title;
   if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
-  if (updates.status !== undefined) dbUpdates.status = updates.status;
+  if (updates.frequency !== undefined) dbUpdates.frequency = updates.frequency;
+  if (updates.billingDay !== undefined) dbUpdates.billing_day = updates.billingDay;
+  if (updates.category !== undefined) dbUpdates.category = updates.category;
+  if (updates.paidBy !== undefined) dbUpdates.paid_by = updates.paidBy;
+  if (updates.lastBilledDate !== undefined) dbUpdates.last_billed_date = updates.lastBilledDate;
+  if (updates.previousAmount !== undefined) dbUpdates.previous_amount = updates.previousAmount;
   if (updates.lastActiveDate !== undefined) dbUpdates.last_active_date = updates.lastActiveDate;
+  if (updates.status !== undefined) dbUpdates.status = updates.status;
   if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
 
   const { data, error } = await supabase.from("recurring").update(dbUpdates).eq("id", id).select().single();

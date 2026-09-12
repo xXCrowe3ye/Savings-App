@@ -87,7 +87,7 @@ export interface RecurringBill {
   lastBilledDate?: string;
   previousAmount?: number; // For inflation/anomaly alerts
   lastActiveDate?: string; // For unused subscription alerts (>60 days)
-  status: "active" | "cancelled" | "flagged";
+  status: "active" | "cancelled" | "flagged" | "paused";
   notes?: string;
 }
 
