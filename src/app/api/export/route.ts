@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getCurrentSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: Request) {
   try {
     const session = await getCurrentSession();
@@ -22,15 +25,17 @@ export async function GET(req: Request) {
 
     if (format === "csv") {
       // Generate CSV of transactions
-      const headers = ["ID", "Date", "Amount", "Category", "Description", "PaidBy", "SplitRatio", "Notes"];
+      const headers = ["ID", "Type", "Date", "Amount", "Category", "Description", "PaidBy", "SplitRatio", "GoalID", "Notes"];
       const rows = transactions.map((t) => [
         `"${t.id}"`,
+        `"${t.type || "expense"}"`,
         `"${t.date}"`,
         t.amount,
         `"${t.category.replace(/"/g, '""')}"`,
         `"${t.description.replace(/"/g, '""')}"`,
         `"${t.paidBy}"`,
         `"${t.splitRatio}"`,
+        `"${(t.goalId || "").replace(/"/g, '""')}"`,
         `"${(t.notes || "").replace(/"/g, '""')}"`,
       ]);
       const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");

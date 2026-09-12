@@ -29,11 +29,23 @@ export default function AnalyticsPage() {
   const ratioA = Math.round((partnerASpent / totalPartnerSpent) * 100);
   const ratioB = 100 - ratioA;
 
+  const currentMonthPrefix = new Date().toISOString().slice(0, 7);
+  const currentMonthSavings = transactions
+    .filter((t) => t.type === "savings" && t.date.startsWith(currentMonthPrefix))
+    .reduce((acc, t) => acc + (t.amount || 0), 0);
+
+  const monthlyVelocity =
+    currentMonthSavings > 0
+      ? currentMonthSavings
+      : netMonthlySurplus > 0
+      ? netMonthlySurplus
+      : 0;
+
   // 30, 60, 90 day Cash Flow Projections
   const currentSavings = metrics?.combinedNetSavings ?? 0;
-  const projection30 = currentSavings + netMonthlySurplus;
-  const projection60 = currentSavings + netMonthlySurplus * 2;
-  const projection90 = currentSavings + netMonthlySurplus * 3;
+  const projection30 = currentSavings + monthlyVelocity;
+  const projection60 = currentSavings + monthlyVelocity * 2;
+  const projection90 = currentSavings + monthlyVelocity * 3;
 
   const handleExport = async (format: "csv" | "json") => {
     try {
@@ -56,6 +68,8 @@ export default function AnalyticsPage() {
     }
   };
 
+  const currentYear = new Date().getFullYear();
+
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
       {/* Cash Flow Forecasting Hero */}
@@ -65,7 +79,7 @@ export default function AnalyticsPage() {
           <h2 className="font-bold text-base">Cash Flow Projections</h2>
         </div>
         <p className="text-xs text-white/70">
-          Estimated joint surplus based on current velocity and recurring bills (+{formatMoney(netMonthlySurplus, currency)}/mo net)
+          Estimated joint surplus based on current velocity and recurring bills (+{formatMoney(monthlyVelocity, currency)}/mo net)
         </p>
 
         <div className="grid grid-cols-3 gap-2 mt-4">
@@ -131,7 +145,7 @@ export default function AnalyticsPage() {
         <div className="flex items-center space-x-2 mb-2">
           <Sparkles className="w-4 h-4 text-amber-500" />
           <h4 className="font-bold text-xs uppercase tracking-wider text-amber-700 dark:text-amber-400">
-            2026 Year-to-Date Highlights
+            {currentYear} Year-to-Date Highlights
           </h4>
         </div>
         <div className="space-y-1.5 text-xs text-foreground/90">
