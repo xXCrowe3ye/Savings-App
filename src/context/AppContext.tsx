@@ -121,12 +121,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const refreshData = useCallback(async () => {
     try {
       setIsLoading(true);
+      const fetchOpts = { cache: "no-store" as RequestCache };
       const [meRes, txRes, bgRes, glRes, rcRes] = await Promise.all([
-        fetch("/api/auth/me"),
-        fetch("/api/transactions"),
-        fetch("/api/budgets"),
-        fetch("/api/goals"),
-        fetch("/api/recurring"),
+        fetch("/api/auth/me", fetchOpts),
+        fetch("/api/transactions", fetchOpts),
+        fetch("/api/budgets", fetchOpts),
+        fetch("/api/goals", fetchOpts),
+        fetch("/api/recurring", fetchOpts),
       ]);
 
       if (meRes.ok) {
@@ -210,11 +211,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Check offline queue
     getQueuedTransactions().then((items) => setPendingOfflineCount(items.length));
 
-    // Register PWA Service Worker
+    // Register PWA Service Worker & auto-check for updates
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
-        .then(() => console.log("Babi-Savings PWA ServiceWorker registered"))
+        .then((reg) => {
+          reg.update().catch(() => {});
+          console.log("Babi-Savings PWA ServiceWorker registered & updated");
+        })
         .catch((err) => console.log("SW registration error:", err));
     }
 

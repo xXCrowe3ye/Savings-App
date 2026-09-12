@@ -20,6 +20,9 @@ const createTransactionSchema = z.object({
   isRecurring: z.boolean().optional(),
 });
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const transactions = await db.getTransactions();

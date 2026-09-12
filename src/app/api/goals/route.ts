@@ -18,6 +18,9 @@ const createGoalSchema = z.object({
   roundupUnit: z.union([z.literal(1), z.literal(5)]).default(1),
 });
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const goals = await db.getGoals();
