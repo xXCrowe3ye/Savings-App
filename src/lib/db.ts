@@ -30,7 +30,7 @@ class InMemoryStore {
   goals: SavingsGoal[] = [...INITIAL_GOALS];
   recurring: RecurringBill[] = [...INITIAL_RECURRING];
   settlements: Settlement[] = [...INITIAL_SETTLEMENTS];
-  sharedIncome: number = 7800;
+  sharedIncome: number = 0;
 }
 
 // Global singleton across serverless invocations in dev
@@ -207,6 +207,36 @@ export const db = {
     return globalStore.budgets;
   },
 
+  async addBudget(budget: Omit<CategoryBudget, "id">): Promise<CategoryBudget> {
+    const newBudget: CategoryBudget = {
+      ...budget,
+      id: `bg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      spentAmount: budget.spentAmount || 0,
+      rolloverAccumulated: budget.rolloverAccumulated || 0,
+      alertThreshold: budget.alertThreshold || 0.9,
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        return await supabaseService.addSupabaseBudget(budget);
+      } catch (err) {
+        console.warn("Supabase addBudget failed:", err);
+      }
+    }
+
+    if (isGoogleSheetsConfigured()) {
+      try {
+        await sheets.appendSheetRow("Budgets", newBudget);
+        return newBudget;
+      } catch (err) {
+        console.warn("Google Sheets addBudget failed:", err);
+      }
+    }
+
+    globalStore.budgets.push(newBudget);
+    return newBudget;
+  },
+
   async updateBudget(id: string, updates: Partial<CategoryBudget>): Promise<CategoryBudget> {
     if (isSupabaseConfigured()) {
       try {
@@ -228,6 +258,26 @@ export const db = {
       return globalStore.budgets[index];
     }
     throw new Error(`Budget ${id} not found`);
+  },
+
+  async deleteBudget(id: string): Promise<void> {
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseService.deleteSupabaseBudget(id);
+        return;
+      } catch (err) {
+        console.warn("Supabase deleteBudget failed:", err);
+      }
+    }
+
+    if (isGoogleSheetsConfigured()) {
+      try {
+        await sheets.deleteSheetRow("Budgets", id);
+      } catch (err) {
+        console.warn("Google Sheets deleteBudget failed:", err);
+      }
+    }
+    globalStore.budgets = globalStore.budgets.filter((b: CategoryBudget) => b.id !== id);
   },
 
   // Goals
@@ -469,7 +519,7 @@ export const db = {
         return await supabaseService.getSupabaseSharedIncome();
       } catch {}
     }
-    return globalStore.sharedIncome || 7800;
+    return globalStore.sharedIncome || 0;
   },
 
   async updateSharedIncome(income: number): Promise<void> {
@@ -493,9 +543,10 @@ export const db = {
       db.getSharedIncome(),
     ]);
 
-    const currentMonthPrefix = new Date().toISOString().slice(0, 7);
+    const now = new Date();
+    const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-    // Filter strictly to current month expenses for spend metrics (exclude savings deposits)
+    // Filter strictly to current month expenses for spend metrics (exclude savings deposits, settlements, income)
     const expenseTxs = txs.filter((t) => (t.type || "expense") === "expense");
     const currentMonthExpenseTxs = expenseTxs.filter((t) => t.date.startsWith(currentMonthPrefix));
 
@@ -530,15 +581,19 @@ export const db = {
       (acc, b) => acc + (b.monthlyLimit || 0) + (b.rolloverEnabled ? b.rolloverAccumulated || 0 : 0),
       0
     );
-    const totalBudgetSpent = budgets.reduce(
-      (acc, b) => acc + (categorySpentMap[b.category] !== undefined ? categorySpentMap[b.category] : b.spentAmount || 0),
-      0
-    );
-    const budgetRemaining = Math.max(0, totalMonthlyBudget - totalBudgetSpent);
     const daysLeft = getDaysRemainingInMonth();
-    const safeToSpendDaily = Math.round((budgetRemaining / daysLeft) * 100) / 100;
+
+    let safeToSpendDaily = 0;
+    if (totalMonthlyBudget > 0) {
+      const budgetRemaining = Math.max(0, totalMonthlyBudget - totalExpenses);
+      safeToSpendDaily = Math.round((budgetRemaining / daysLeft) * 100) / 100;
+    } else if (totalIncome > 0) {
+      const incomeRemaining = Math.max(0, totalIncome - totalExpenses);
+      safeToSpendDaily = Math.round((incomeRemaining / daysLeft) * 100) / 100;
+    }
 
     // IOU calculation (for shared expenses only)
+    // balanceAtoB: positive means Partner B owes Partner A; negative means Partner A owes Partner B
     let balanceAtoB = 0;
     for (const t of expenseTxs) {
       const splitA =
@@ -564,21 +619,39 @@ export const db = {
       }
     }
 
-    // Offset settlements
-    for (const s of settlements) {
-      if (s.status === "settled") {
-        if (s.fromPartner === "partner_b" && s.toPartner === "partner_a") {
-          balanceAtoB -= s.amount;
-        } else if (s.fromPartner === "partner_a" && s.toPartner === "partner_b") {
-          balanceAtoB += s.amount;
-        }
+    // Offset settlements (from settlements store or transactions with type === "settlement")
+    const allSettlements: { fromPartner: string; toPartner: string; amount: number }[] = [
+      ...settlements.filter((s) => s.status === "settled"),
+    ];
+
+    // Also include any settlement transactions not yet reflected in settlements list
+    const settlementTxs = txs.filter((t) => t.type === "settlement");
+    for (const st of settlementTxs) {
+      const alreadyIn = settlements.some((s) => s.id === st.id || s.note?.includes(st.id));
+      if (!alreadyIn) {
+        allSettlements.push({
+          fromPartner: st.paidBy,
+          toPartner: st.paidBy === "partner_a" ? "partner_b" : "partner_a",
+          amount: st.amount,
+        });
       }
     }
 
+    for (const s of allSettlements) {
+      if (s.fromPartner === "partner_b" && s.toPartner === "partner_a") {
+        balanceAtoB -= s.amount;
+      } else if (s.fromPartner === "partner_a" && s.toPartner === "partner_b") {
+        balanceAtoB += s.amount;
+      }
+    }
+
+    const roundedBalance = Math.round(balanceAtoB * 100) / 100;
     const netIOU: DashboardMetrics["netIOU"] =
-      balanceAtoB >= 0
-        ? { from: "partner_b", to: "partner_a", amount: Math.round(balanceAtoB * 100) / 100 }
-        : { from: "partner_a", to: "partner_b", amount: Math.round(Math.abs(balanceAtoB) * 100) / 100 };
+      Math.abs(roundedBalance) < 0.01
+        ? { from: "partner_b", to: "partner_a", amount: 0 }
+        : roundedBalance > 0
+        ? { from: "partner_b", to: "partner_a", amount: roundedBalance }
+        : { from: "partner_a", to: "partner_b", amount: Math.abs(roundedBalance) };
 
     const pendingApprovalsCount = expenseTxs.filter(
       (t) => t.needsApproval && !t.approvedByPartner

@@ -189,17 +189,46 @@ export async function getSupabaseBudgets(): Promise<CategoryBudget[]> {
   return (data || []).map(mapBudget);
 }
 
+export async function addSupabaseBudget(budget: Omit<CategoryBudget, "id">): Promise<CategoryBudget> {
+  const supabase = getSupabaseClient();
+  const newId = `bg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const row = {
+    id: newId,
+    category: budget.category,
+    icon: budget.icon || "Tag",
+    monthly_limit: budget.monthlyLimit,
+    spent_amount: budget.spentAmount || 0,
+    rollover_enabled: budget.rolloverEnabled || false,
+    rollover_accumulated: budget.rolloverAccumulated || 0,
+    alert_threshold: budget.alertThreshold || 0.9,
+    month_year: budget.monthYear || null,
+  };
+
+  const { data, error } = await supabase.from("budgets").insert(row).select().single();
+  if (error) throw error;
+  return mapBudget(data);
+}
+
 export async function updateSupabaseBudget(id: string, updates: Partial<CategoryBudget>): Promise<CategoryBudget> {
   const supabase = getSupabaseClient();
   const dbUpdates: any = {};
+  if (updates.category !== undefined) dbUpdates.category = updates.category;
+  if (updates.icon !== undefined) dbUpdates.icon = updates.icon;
   if (updates.monthlyLimit !== undefined) dbUpdates.monthly_limit = updates.monthlyLimit;
   if (updates.rolloverEnabled !== undefined) dbUpdates.rollover_enabled = updates.rolloverEnabled;
   if (updates.rolloverAccumulated !== undefined) dbUpdates.rollover_accumulated = updates.rolloverAccumulated;
   if (updates.spentAmount !== undefined) dbUpdates.spent_amount = updates.spentAmount;
+  if (updates.alertThreshold !== undefined) dbUpdates.alert_threshold = updates.alertThreshold;
 
   const { data, error } = await supabase.from("budgets").update(dbUpdates).eq("id", id).select().single();
   if (error) throw error;
   return mapBudget(data);
+}
+
+export async function deleteSupabaseBudget(id: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("budgets").delete().eq("id", id);
+  if (error) throw error;
 }
 
 export async function getSupabaseGoals(): Promise<SavingsGoal[]> {
@@ -340,7 +369,7 @@ export async function getSupabaseSharedIncome(): Promise<number> {
       return Number(data.value.combinedTotalIncome);
     }
   } catch {}
-  return 7800; // Default fallback
+  return 0; // Default fallback if not set
 }
 
 export async function updateSupabaseSharedIncome(income: number): Promise<void> {

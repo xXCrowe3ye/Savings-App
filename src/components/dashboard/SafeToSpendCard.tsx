@@ -50,11 +50,17 @@ export function SafeToSpendCard() {
           <div className="flex items-center space-x-1.5">
             <div
               className={`w-2 h-2 rounded-full ${
-                isTight ? "bg-amber-400 animate-ping" : "bg-teal-400"
+                safeDaily <= 0
+                  ? "bg-slate-400"
+                  : isTight
+                  ? "bg-amber-400 animate-ping"
+                  : "bg-teal-400"
               }`}
             />
             <span className="text-white/80 font-medium">
-              {isTight
+              {safeDaily <= 0
+                ? "Set monthly income or category budgets to calculate pace"
+                : isTight
                 ? "Budget tight — conserve discretionary spend"
                 : "Pace is optimal and on track"}
             </span>

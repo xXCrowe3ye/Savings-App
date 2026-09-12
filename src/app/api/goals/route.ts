@@ -90,6 +90,18 @@ export async function PATCH(req: Request) {
 
     const updates: Record<string, any> = {};
 
+    // General Goal Property Edits (Edit Modal)
+    if (typeof body.title === "string" && body.title.trim()) updates.title = body.title.trim();
+    if (typeof body.emoji === "string") updates.emoji = body.emoji;
+    if (typeof body.targetAmount === "number" && body.targetAmount > 0) updates.targetAmount = body.targetAmount;
+    if (typeof body.currentAmount === "number" && body.currentAmount >= 0) updates.currentAmount = body.currentAmount;
+    if (typeof body.targetDate === "string") updates.targetDate = body.targetDate;
+    if (typeof body.category === "string") updates.category = body.category;
+    if (body.priority === "high" || body.priority === "medium" || body.priority === "low") updates.priority = body.priority;
+    if (body.status === "active" || body.status === "achieved" || body.status === "paused") updates.status = body.status;
+    if (typeof body.partnerAContribution === "number") updates.partnerAContribution = body.partnerAContribution;
+    if (typeof body.partnerBContribution === "number") updates.partnerBContribution = body.partnerBContribution;
+
     // Windfall Boost or Deposit Allocation
     if (action === "boost" || action === "deposit") {
       const boostAmount = Number(amount);
@@ -111,6 +123,22 @@ export async function PATCH(req: Request) {
       if (updates.currentAmount >= targetGoal.targetAmount) {
         updates.status = "achieved";
       }
+
+      // Record savings transaction so it reflects in transactions and activity history
+      await db.addTransaction({
+        type: "savings",
+        date: new Date().toISOString().split("T")[0],
+        amount: boostAmount,
+        category: "Savings",
+        description: `Boost into ${targetGoal.title}`,
+        paidBy: isB ? "partner_b" : "partner_a",
+        splitRatio: is5050 ? "50/50" : isA ? "100/0" : "0/100",
+        partnerASplitPercentage: is5050 ? 50 : isA ? 100 : 0,
+        goalId: id,
+        notes: "Allocated via Windfall Boost",
+        needsApproval: false,
+        approvedByPartner: true,
+      });
     }
 
     // Toggle round-up
@@ -123,6 +151,19 @@ export async function PATCH(req: Request) {
 
     const updated = await db.updateGoal(id, updates);
     return NextResponse.json({ success: true, goal: updated });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "Missing goal ID" }, { status: 400 });
+
+    await db.deleteGoal(id);
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -12,10 +12,16 @@ interface EditIncomeModalProps {
 
 export function EditIncomeModal({ isOpen, onClose }: EditIncomeModalProps) {
   const { metrics, currency, updateSharedIncome, refreshData } = useApp();
-  const currentIncome = metrics?.combinedTotalIncome || 7800;
+  const currentIncome = metrics?.combinedTotalIncome ?? 0;
 
-  const [incomeAmount, setIncomeAmount] = useState(currentIncome.toString());
+  const [incomeAmount, setIncomeAmount] = useState(currentIncome > 0 ? currentIncome.toString() : "");
   const [isSaving, setIsSaving] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setIncomeAmount(currentIncome > 0 ? currentIncome.toString() : "");
+    }
+  }, [isOpen, currentIncome]);
 
   if (!isOpen) return null;
 

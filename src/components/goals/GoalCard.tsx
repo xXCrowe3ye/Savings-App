@@ -12,6 +12,8 @@ import {
   ArrowUpRight,
   Gift,
   CheckCircle,
+  Edit2,
+  PauseCircle,
 } from "lucide-react";
 
 interface GoalCardProps {
@@ -24,9 +26,10 @@ interface GoalCardProps {
     partnerBRatio?: number;
   };
   onOpenBoost: (goal: SavingsGoal) => void;
+  onEditGoal: (goal: SavingsGoal) => void;
 }
 
-export function GoalCard({ goal, onOpenBoost }: GoalCardProps) {
+export function GoalCard({ goal, onOpenBoost, onEditGoal }: GoalCardProps) {
   const { currency, toggleGoalRoundup, partnerAName, partnerBName } = useApp();
   const [isTogglingRoundup, setIsTogglingRoundup] = useState(false);
 
@@ -43,7 +46,9 @@ export function GoalCard({ goal, onOpenBoost }: GoalCardProps) {
   const partnerBRatio = goal.partnerBRatio ?? 50;
 
   return (
-    <div className="bg-card border rounded-3xl p-5 shadow-xs relative overflow-hidden flex flex-col justify-between">
+    <div className={`bg-card border rounded-3xl p-5 shadow-xs relative overflow-hidden flex flex-col justify-between ${
+      goal.status === "paused" ? "opacity-75 border-dashed" : ""
+    }`}>
       {/* Top Header */}
       <div>
         <div className="flex items-start justify-between">
@@ -56,6 +61,12 @@ export function GoalCard({ goal, onOpenBoost }: GoalCardProps) {
                   <span className="flex items-center space-x-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
                     <CheckCircle className="w-3 h-3" />
                     <span>Achieved!</span>
+                  </span>
+                )}
+                {goal.status === "paused" && (
+                  <span className="flex items-center space-x-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
+                    <PauseCircle className="w-3 h-3" />
+                    <span>Paused</span>
                   </span>
                 )}
               </div>
@@ -76,14 +87,24 @@ export function GoalCard({ goal, onOpenBoost }: GoalCardProps) {
             </div>
           </div>
 
-          {/* Windfall Boost CTA */}
-          <button
-            onClick={() => onOpenBoost(goal)}
-            className="px-2.5 py-1 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-all flex items-center space-x-1"
-          >
-            <Gift className="w-3.5 h-3.5" />
-            <span>Boost</span>
-          </button>
+          {/* Actions: Edit & Windfall Boost */}
+          <div className="flex items-center space-x-1.5">
+            <button
+              onClick={() => onEditGoal(goal)}
+              className="p-1.5 rounded-xl bg-secondary/70 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all"
+              title="Edit or Delete Goal"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => onOpenBoost(goal)}
+              className="px-2.5 py-1 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-all flex items-center space-x-1"
+            >
+              <Gift className="w-3.5 h-3.5" />
+              <span>Boost</span>
+            </button>
+          </div>
         </div>
 
         {/* Progress Display */}

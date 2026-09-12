@@ -6,7 +6,7 @@ import { sanitizeHtml, stripFormulaTriggers } from "@/lib/sanitize";
 import { calculateRoundUp } from "@/lib/utils";
 
 const createTransactionSchema = z.object({
-  type: z.enum(["expense", "savings", "income"]).default("expense"),
+  type: z.enum(["expense", "savings", "income", "settlement"]).default("expense"),
   date: z.string().min(1),
   amount: z.number().positive(),
   category: z.string().min(1),
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     const sanitizedDescription = stripFormulaTriggers(sanitizeHtml(data.description));
     const sanitizedNotes = data.notes ? stripFormulaTriggers(sanitizeHtml(data.notes)) : "";
 
-    // High expense approval badge threshold: >= $200 (for expenses only)
+    // High expense approval badge threshold: >= $200 (for expenses only, not settlements or savings)
     const needsApproval = data.type === "expense" && data.amount >= 200;
     const approvedByPartner = !needsApproval;
 
@@ -67,10 +67,28 @@ export async function POST(req: Request) {
       notes: sanitizedNotes,
     });
 
+    // If type is settlement, also persist to settlements store
+    if (data.type === "settlement") {
+      const toPartner = data.paidBy === "partner_a" ? "partner_b" : "partner_a";
+      await db.addSettlement({
+        date: data.date,
+        fromPartner: data.paidBy,
+        toPartner,
+        amount: data.amount,
+        status: "settled",
+        note: sanitizedDescription || "IOU Settlement",
+      });
+    }
+
     // If type is savings deposit and a goal is targeted, credit the goal immediately!
-    if (data.type === "savings" && data.goalId) {
+    if (data.type === "savings") {
       const goals = await db.getGoals();
-      const targetGoal = goals.find((g) => g.id === data.goalId);
+      const targetGoal = data.goalId
+        ? goals.find((g) => g.id === data.goalId)
+        : goals.length > 0
+        ? goals[0]
+        : undefined;
+
       if (targetGoal) {
         let addA = 0;
         let addB = 0;

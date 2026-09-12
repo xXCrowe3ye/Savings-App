@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Check,
   Trash2,
+  ArrowRightLeft,
 } from "lucide-react";
 
 interface TransactionItemProps {
@@ -36,6 +37,7 @@ const CATEGORY_ICONS: Record<string, any> = {
   Shopping: ShoppingBag,
   Health: HeartPulse,
   Personal: Tag,
+  Settlement: ArrowRightLeft,
 };
 
 export function TransactionItem({ transaction }: TransactionItemProps) {
@@ -45,7 +47,8 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
   const [isSavingNote, setIsSavingNote] = useState(false);
 
   const isSavings = transaction.type === "savings";
-  const Icon = isSavings ? PiggyBank : CATEGORY_ICONS[transaction.category] || Tag;
+  const isSettlement = transaction.type === "settlement";
+  const Icon = isSavings ? PiggyBank : isSettlement ? ArrowRightLeft : CATEGORY_ICONS[transaction.category] || Tag;
   const isPartnerA = transaction.paidBy === "partner_a";
   const partnerName = getPartnerName(transaction.paidBy);
 
@@ -67,7 +70,11 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
 
   return (
     <div className={`p-3 bg-card border rounded-2xl hover:border-primary/30 transition-all shadow-2xs ${
-      isSavings ? "border-emerald-500/30 bg-emerald-500/[0.02]" : ""
+      isSavings
+        ? "border-emerald-500/30 bg-emerald-500/[0.02]"
+        : isSettlement
+        ? "border-violet-500/30 bg-violet-500/[0.02]"
+        : ""
     }`}>
       <div
         onClick={() => setIsExpanded(!isExpanded)}
@@ -78,6 +85,8 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
             className={`w-10 h-10 rounded-xl flex items-center justify-center ${
               isSavings
                 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                : isSettlement
+                ? "bg-violet-500/15 text-violet-600 dark:text-violet-400"
                 : isPartnerA
                 ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
                 : "bg-teal-500/10 text-teal-600 dark:text-teal-400"
@@ -94,6 +103,11 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
               {isSavings && (
                 <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
                   Savings
+                </span>
+              )}
+              {isSettlement && (
+                <span className="px-1.5 py-0.2 rounded bg-violet-500/10 text-violet-600 dark:text-violet-400 text-[10px] font-bold">
+                  Settlement
                 </span>
               )}
               {transaction.receiptUrl && (
@@ -113,9 +127,9 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
                     : "text-teal-600 dark:text-teal-400"
                 }`}
               >
-                {partnerName} {isSavings ? "saved" : "paid"}
+                {partnerName} {isSavings ? "saved" : isSettlement ? "settled" : "paid"}
               </span>
-              {!isSavings && (
+              {!isSavings && !isSettlement && (
                 <>
                   <span>•</span>
                   <span className="px-1.5 py-0.2 rounded bg-secondary text-[10px]">
@@ -128,7 +142,13 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
         </div>
 
         <div className="text-right">
-          <div className={`font-bold text-sm ${isSavings ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"}`}>
+          <div className={`font-bold text-sm ${
+            isSavings
+              ? "text-emerald-600 dark:text-emerald-400"
+              : isSettlement
+              ? "text-violet-600 dark:text-violet-400"
+              : "text-foreground"
+          }`}>
             {isSavings ? "+" : ""}{formatMoney(transaction.amount, currency)}
           </div>
           {transaction.needsApproval && !transaction.approvedByPartner && (

@@ -6,17 +6,14 @@ import { formatMoney } from "@/lib/utils";
 import { Scale, CheckCircle2, ArrowRightLeft, Sparkles } from "lucide-react";
 
 export function DebtSettlementCard() {
-  const { currentUser, metrics, currency, refreshData, triggerConfetti } = useApp();
+  const { currentUser, getPartnerName, metrics, currency, refreshData, triggerConfetti } = useApp();
   const [isSettling, setIsSettling] = useState(false);
 
   const iou = metrics?.netIOU;
   const isSettled = !iou || iou.amount <= 0;
 
-  const partnerAName = currentUser.partnerKey === "partner_a" ? (currentUser.nickname || currentUser.name || "Partner A") : "Partner A";
-  const partnerBName = currentUser.partnerKey === "partner_b" ? (currentUser.nickname || currentUser.name || "Partner B") : "Partner B";
-
-  const debtorName = iou?.from === "partner_a" ? partnerAName : partnerBName;
-  const creditorName = iou?.to === "partner_a" ? partnerAName : partnerBName;
+  const debtorName = iou?.from ? getPartnerName(iou.from) : "Partner";
+  const creditorName = iou?.to ? getPartnerName(iou.to) : "Partner";
 
   const handleSettle = async () => {
     if (!iou || iou.amount <= 0) return;
@@ -26,13 +23,14 @@ export function DebtSettlementCard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          type: "settlement",
           amount: iou.amount,
           description: `IOU Settlement: ${debtorName} paid ${creditorName}`,
-          category: "Personal",
+          category: "Settlement",
           date: new Date().toISOString().split("T")[0],
           paidBy: iou.from,
-          splitRatio: "0/100", // pure individual settlement
-          notes: "Settled up via Babi-Savings IOU tracker",
+          splitRatio: "0/100",
+          notes: `Settled up ${formatMoney(iou.amount, currency)} via Couple IOU tracker`,
         }),
       });
 

@@ -56,6 +56,13 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Synchronize default selected goal when goals array loads
+  React.useEffect(() => {
+    if (goals.length > 0 && (!selectedGoalId || !goals.some((g) => g.id === selectedGoalId))) {
+      setSelectedGoalId(goals[0].id);
+    }
+  }, [goals, selectedGoalId]);
+
   if (!isOpen) return null;
 
   // Active round-up goal check
@@ -116,9 +123,10 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
     e.preventDefault();
     if (!amount || parsedNumAmount <= 0) return;
 
+    const targetGoalId = selectedGoalId || goals[0]?.id;
     const finalDescription =
       entryType === "savings"
-        ? description || `Deposit into ${goals.find((g) => g.id === selectedGoalId)?.title || "Savings"}`
+        ? description || `Deposit into ${goals.find((g) => g.id === targetGoalId)?.title || "Savings"}`
         : description;
 
     if (!finalDescription) return;
@@ -129,7 +137,7 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
       amount: parsedNumAmount,
       description: finalDescription,
       category: entryType === "savings" ? "Savings" : category,
-      goalId: entryType === "savings" ? selectedGoalId : undefined,
+      goalId: entryType === "savings" ? targetGoalId : undefined,
       date,
       paidBy,
       splitRatio,

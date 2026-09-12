@@ -19,8 +19,8 @@ export default function AnalyticsPage() {
   const { metrics, currency, transactions, recurring, budgets, partnerAName, partnerBName } = useApp();
   const [isExporting, setIsExporting] = useState(false);
 
-  const income = metrics?.combinedTotalIncome || 7800;
-  const currentExpenses = metrics?.combinedTotalExpenses || 2700;
+  const income = metrics?.combinedTotalIncome ?? 0;
+  const currentExpenses = metrics?.combinedTotalExpenses ?? 0;
   const netMonthlySurplus = Math.max(0, income - currentExpenses);
 
   const partnerASpent = metrics?.partnerASpent || 0;
@@ -30,7 +30,7 @@ export default function AnalyticsPage() {
   const ratioB = 100 - ratioA;
 
   // 30, 60, 90 day Cash Flow Projections
-  const currentSavings = metrics?.combinedNetSavings || 14200;
+  const currentSavings = metrics?.combinedNetSavings ?? 0;
   const projection30 = currentSavings + netMonthlySurplus;
   const projection60 = currentSavings + netMonthlySurplus * 2;
   const projection90 = currentSavings + netMonthlySurplus * 3;

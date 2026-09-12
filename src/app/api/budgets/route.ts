@@ -56,17 +56,60 @@ export async function GET() {
   }
 }
 
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { category, monthlyLimit, icon, rolloverEnabled, alertThreshold } = body;
+
+    if (!category || typeof monthlyLimit !== "number" || monthlyLimit <= 0) {
+      return NextResponse.json({ error: "Category and positive monthly limit are required." }, { status: 400 });
+    }
+
+    const newBudget = await db.addBudget({
+      category: category.trim(),
+      icon: icon || "Tag",
+      monthlyLimit,
+      spentAmount: 0,
+      rolloverEnabled: Boolean(rolloverEnabled),
+      rolloverAccumulated: 0,
+      alertThreshold: typeof alertThreshold === "number" ? alertThreshold : 0.9,
+      monthYear: new Date().toISOString().slice(0, 7),
+    });
+
+    return NextResponse.json({ success: true, budget: newBudget });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 export async function PATCH(req: Request) {
   try {
-    const { id, monthlyLimit, rolloverEnabled } = await req.json();
+    const { id, category, monthlyLimit, icon, rolloverEnabled, rolloverAccumulated, alertThreshold } = await req.json();
     if (!id) return NextResponse.json({ error: "Missing budget ID" }, { status: 400 });
 
     const updates: Record<string, any> = {};
+    if (typeof category === "string" && category.trim()) updates.category = category.trim();
     if (typeof monthlyLimit === "number") updates.monthlyLimit = monthlyLimit;
+    if (typeof icon === "string") updates.icon = icon;
     if (typeof rolloverEnabled === "boolean") updates.rolloverEnabled = rolloverEnabled;
+    if (typeof rolloverAccumulated === "number") updates.rolloverAccumulated = rolloverAccumulated;
+    if (typeof alertThreshold === "number") updates.alertThreshold = alertThreshold;
 
     const updated = await db.updateBudget(id, updates);
     return NextResponse.json({ success: true, budget: updated });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "Missing budget ID" }, { status: 400 });
+
+    await db.deleteBudget(id);
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -7,12 +7,14 @@ import { SavingsGoal } from "@/types";
 import { GoalCard } from "@/components/goals/GoalCard";
 import { GoalWizardModal } from "@/components/goals/GoalWizardModal";
 import { WindfallBoostModal } from "@/components/goals/WindfallBoostModal";
+import { EditGoalModal } from "@/components/goals/EditGoalModal";
 import { Target, Plus, Coins, Sparkles, PiggyBank } from "lucide-react";
 
 export default function GoalsPage() {
   const { goals, currency } = useApp();
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [boostTargetGoal, setBoostTargetGoal] = useState<SavingsGoal | null>(null);
+  const [editTargetGoal, setEditTargetGoal] = useState<SavingsGoal | null>(null);
 
   const totalCurrentSaved = goals.reduce((acc, g) => acc + g.currentAmount, 0);
   const totalTargetNeeded = goals.reduce((acc, g) => acc + g.targetAmount, 0);
@@ -88,6 +90,7 @@ export default function GoalsPage() {
             key={goal.id}
             goal={goal}
             onOpenBoost={(g) => setBoostTargetGoal(g)}
+            onEditGoal={(g) => setEditTargetGoal(g)}
           />
         ))}
       </div>
@@ -102,6 +105,12 @@ export default function GoalsPage() {
         goal={boostTargetGoal}
         isOpen={Boolean(boostTargetGoal)}
         onClose={() => setBoostTargetGoal(null)}
+      />
+
+      <EditGoalModal
+        goal={editTargetGoal}
+        isOpen={Boolean(editTargetGoal)}
+        onClose={() => setEditTargetGoal(null)}
       />
     </div>
   );
