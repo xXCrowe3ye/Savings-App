@@ -54,7 +54,7 @@ export function BillModal({ isOpen, onClose, billToEdit }: BillModalProps) {
   const [frequency, setFrequency] = useState<"monthly" | "yearly" | "weekly">("monthly");
   const [billingDay, setBillingDay] = useState(1);
   const [category, setCategory] = useState("Utilities");
-  const [paidBy, setPaidBy] = useState<PartnerKey>(currentUser.partnerKey);
+  const [paidBy, setPaidBy] = useState<PartnerKey | "shared">("shared");
   const [status, setStatus] = useState<RecurringBill["status"]>("active");
   const [notes, setNotes] = useState("");
 
@@ -68,7 +68,7 @@ export function BillModal({ isOpen, onClose, billToEdit }: BillModalProps) {
       setFrequency(billToEdit.frequency || "monthly");
       setBillingDay(billToEdit.billingDay || 1);
       setCategory(billToEdit.category || "Utilities");
-      setPaidBy(billToEdit.paidBy || "partner_a");
+      setPaidBy(billToEdit.paidBy || "shared");
       setStatus(billToEdit.status || "active");
       setNotes(billToEdit.notes || "");
       setConfirmDelete(false);
@@ -78,7 +78,7 @@ export function BillModal({ isOpen, onClose, billToEdit }: BillModalProps) {
       setFrequency("monthly");
       setBillingDay(1);
       setCategory("Utilities");
-      setPaidBy(currentUser.partnerKey);
+      setPaidBy("shared");
       setStatus("active");
       setNotes("");
       setConfirmDelete(false);
@@ -333,36 +333,72 @@ export function BillModal({ isOpen, onClose, billToEdit }: BillModalProps) {
             </div>
           </div>
 
-          {/* Paid By Selector */}
+          {/* Payment Split & Responsibility Selector */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
-              Who is responsible for paying this bill?
-            </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">
+                Payment Responsibility &amp; Split
+              </label>
+              {paidBy === "shared" && parsedAmount > 0 && (
+                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  {formatMoney(parsedAmount / 2, currency)} each
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setPaidBy("shared")}
+                className={`py-2 px-2 rounded-xl border text-xs font-semibold transition-all flex flex-col items-center justify-center text-center ${
+                  paidBy === "shared"
+                    ? "bg-gradient-to-tr from-indigo-600 to-teal-500 text-white border-teal-500 shadow-sm"
+                    : "bg-background border-border hover:bg-secondary text-foreground"
+                }`}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Shared 50/50</span>
+                  {paidBy === "shared" && <Check className="w-3 h-3" />}
+                </div>
+                <span className={`text-[10px] mt-0.5 ${paidBy === "shared" ? "text-white/90" : "text-muted-foreground"}`}>
+                  Split equally
+                </span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setPaidBy("partner_a")}
-                className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                className={`py-2 px-2 rounded-xl border text-xs font-semibold transition-all flex flex-col items-center justify-center text-center ${
                   paidBy === "partner_a"
                     ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
                     : "bg-background border-border hover:bg-secondary text-foreground"
                 }`}
               >
-                <span>{partnerAName}</span>
-                {paidBy === "partner_a" && <Check className="w-3.5 h-3.5" />}
+                <div className="flex items-center space-x-1">
+                  <span className="truncate max-w-[90px]">{partnerAName}</span>
+                  {paidBy === "partner_a" && <Check className="w-3 h-3" />}
+                </div>
+                <span className={`text-[10px] mt-0.5 ${paidBy === "partner_a" ? "text-white/90" : "text-muted-foreground"}`}>
+                  100% {partnerAName}
+                </span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setPaidBy("partner_b")}
-                className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                className={`py-2 px-2 rounded-xl border text-xs font-semibold transition-all flex flex-col items-center justify-center text-center ${
                   paidBy === "partner_b"
                     ? "bg-teal-600 text-white border-teal-600 shadow-sm"
                     : "bg-background border-border hover:bg-secondary text-foreground"
                 }`}
               >
-                <span>{partnerBName}</span>
-                {paidBy === "partner_b" && <Check className="w-3.5 h-3.5" />}
+                <div className="flex items-center space-x-1">
+                  <span className="truncate max-w-[90px]">{partnerBName}</span>
+                  {paidBy === "partner_b" && <Check className="w-3 h-3" />}
+                </div>
+                <span className={`text-[10px] mt-0.5 ${paidBy === "partner_b" ? "text-white/90" : "text-muted-foreground"}`}>
+                  100% {partnerBName}
+                </span>
               </button>
             </div>
           </div>

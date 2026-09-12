@@ -8,7 +8,6 @@ import { PinUnlockModal } from "@/components/auth/PinUnlockModal";
 import { RapidLogModal } from "@/components/transactions/RapidLogModal";
 import { LoginGate } from "@/components/auth/LoginGate";
 import { ProfileModal } from "@/components/profile/ProfileModal";
-import { EditIncomeModal } from "@/components/settings/EditIncomeModal";
 import { Sparkles } from "lucide-react";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -17,8 +16,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     isLoading,
     isProfileOpen,
     closeProfile,
-    isIncomeModalOpen,
-    closeIncomeModal,
   } = useApp();
   const [isQuickLogOpen, setIsQuickLogOpen] = useState(false);
 
@@ -50,7 +47,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <MobileBottomNav onOpenQuickLog={() => setIsQuickLogOpen(true)} />
       <RapidLogModal isOpen={isQuickLogOpen} onClose={() => setIsQuickLogOpen(false)} />
       <ProfileModal isOpen={isProfileOpen} onClose={closeProfile} />
-      <EditIncomeModal isOpen={isIncomeModalOpen} onClose={closeIncomeModal} />
       <PinUnlockModal />
     </div>
   );

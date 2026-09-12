@@ -13,7 +13,7 @@ const createRecurringSchema = z.object({
   frequency: z.enum(["monthly", "yearly", "weekly"]).default("monthly"),
   billingDay: z.number().min(1).max(31).default(1),
   category: z.string().default("Utilities"),
-  paidBy: z.enum(["partner_a", "partner_b"]).default("partner_a"),
+  paidBy: z.enum(["partner_a", "partner_b", "shared"]).default("shared"),
   lastBilledDate: z.string().optional(),
   previousAmount: z.number().optional(),
   lastActiveDate: z.string().optional(),

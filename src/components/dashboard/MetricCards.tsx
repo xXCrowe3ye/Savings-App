@@ -3,14 +3,14 @@
 import React from "react";
 import { useApp } from "@/context/AppContext";
 import { formatMoney } from "@/lib/utils";
-import { PiggyBank, TrendingUp, Wallet, ArrowDownRight } from "lucide-react";
+import { PiggyBank, TrendingUp, ArrowDownRight, ArrowUpRight } from "lucide-react";
 
 export function MetricCards() {
-  const { metrics, currency, goals, openIncomeModal } = useApp();
+  const { metrics, currency, goals } = useApp();
 
   const netSavings = metrics?.combinedNetSavings || 0;
   const savingsRate = metrics?.savingsRate || 0;
-  const income = metrics?.combinedTotalIncome || 0;
+  const monthlySavings = metrics?.combinedMonthlySavings || 0;
   const expenses = metrics?.combinedTotalExpenses || 0;
 
   return (
@@ -58,32 +58,27 @@ export function MetricCards() {
         </div>
       </div>
 
-      {/* Shared Income (Clickable to Edit) */}
-      <div
-        onClick={openIncomeModal}
-        className="bg-card border rounded-2xl p-3.5 shadow-xs flex flex-col justify-between cursor-pointer hover:border-emerald-500/40 hover:bg-secondary/40 transition-all group"
-        title="Tap to edit combined monthly income"
-      >
+      {/* Saved MTD (Monthly Savings Deposits) */}
+      <div className="bg-card border rounded-2xl p-3.5 shadow-xs flex flex-col justify-between">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors flex items-center gap-1">
-            <span>Shared Income</span>
-            <span className="text-[9px] lowercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1 py-0.2 rounded font-normal">edit</span>
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            Saved MTD
           </span>
-          <div className="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-            <Wallet className="w-4 h-4" />
+          <div className="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <ArrowUpRight className="w-4 h-4" />
           </div>
         </div>
         <div>
-          <div className="text-xl font-bold tracking-tight">
-            {formatMoney(income, currency)}
+          <div className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+            {formatMoney(monthlySavings, currency)}
           </div>
-          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-            Monthly baseline ✎
+          <span className="text-[10px] text-muted-foreground">
+            Deposited this month
           </span>
         </div>
       </div>
 
-      {/* Shared Expenses */}
+      {/* Expenses MTD */}
       <div className="bg-card border rounded-2xl p-3.5 shadow-xs flex flex-col justify-between">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
@@ -98,7 +93,7 @@ export function MetricCards() {
             {formatMoney(expenses, currency)}
           </div>
           <span className="text-[10px] text-muted-foreground">
-            Month to date
+            Spent this month
           </span>
         </div>
       </div>

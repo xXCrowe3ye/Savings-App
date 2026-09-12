@@ -19,7 +19,7 @@ interface AppContextType {
   partnerUser: UserProfile | null;
   partnerAName: string;
   partnerBName: string;
-  getPartnerName: (partnerKey: PartnerKey) => string;
+  getPartnerName: (partnerKey: PartnerKey | "shared" | "both") => string;
   setCurrentUser: React.Dispatch<React.SetStateAction<UserProfile>>;
   isAuthenticated: boolean;
   currency: CurrencyCode;
@@ -98,7 +98,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ? currentUser.nickname || currentUser.name || "Partner B"
       : partnerUser?.nickname || partnerUser?.name || "Partner B";
 
-  const getPartnerName = (partnerKey: PartnerKey): string => {
+  const getPartnerName = (partnerKey: PartnerKey | "shared" | "both"): string => {
+    if (partnerKey === "shared" || partnerKey === "both") return "Shared (50/50)";
     return partnerKey === "partner_a" ? partnerAName : partnerBName;
   };
 

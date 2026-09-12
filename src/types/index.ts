@@ -83,7 +83,7 @@ export interface RecurringBill {
   frequency: RecurrenceFrequency;
   billingDay: number; // 1-31
   category: string;
-  paidBy: PartnerKey;
+  paidBy: PartnerKey | "shared";
   lastBilledDate?: string;
   previousAmount?: number; // For inflation/anomaly alerts
   lastActiveDate?: string; // For unused subscription alerts (>60 days)
@@ -103,6 +103,7 @@ export interface Settlement {
 
 export interface DashboardMetrics {
   combinedNetSavings: number;
+  combinedMonthlySavings: number; // MTD savings deposits
   combinedTotalIncome: number;
   combinedTotalExpenses: number;
   savingsRate: number; // percentage

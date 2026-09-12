@@ -21,8 +21,6 @@ export function CashflowTrend() {
   const [chartType, setChartType] = useState<"bar" | "area">("area");
   const [timeRange, setTimeRange] = useState<3 | 6 | 12>(6);
 
-  const monthlyIncome = metrics?.combinedTotalIncome || 0;
-
   // Dynamically compute historical savings vs expenses trend data based on selected time range
   const data = useMemo(() => {
     const result = [];
@@ -49,11 +47,7 @@ export function CashflowTrend() {
       const netSurplus = monthSavings - monthExpenses;
       const totalMovement = monthSavings + monthExpenses;
       const savingsRate =
-        monthlyIncome > 0
-          ? Math.min(100, Math.max(0, Math.round((monthSavings / monthlyIncome) * 100)))
-          : totalMovement > 0
-          ? Math.round((monthSavings / totalMovement) * 100)
-          : 0;
+        totalMovement > 0 ? Math.round((monthSavings / totalMovement) * 100) : 0;
 
       result.push({
         month: isCurrentMonth ? `${monthLabel} (Now)` : monthLabel,
@@ -66,7 +60,7 @@ export function CashflowTrend() {
     }
 
     return result;
-  }, [transactions, monthlyIncome, timeRange]);
+  }, [transactions, timeRange]);
 
   // Aggregate stats across the selected period
   const totalPeriodSavings = data.reduce((acc, d) => acc + d.savings, 0);

@@ -572,15 +572,10 @@ export const db = {
     const currentMonthSavingsTxs = savingsTxs.filter((t) => t.date.startsWith(currentMonthPrefix));
     const currentMonthSavings = currentMonthSavingsTxs.reduce((acc, t) => acc + (t.amount || 0), 0);
 
-    // Savings rate (Accurate real-time percentage)
-    let savingsRate = 0;
-    if (totalIncome > 0) {
-      const monthSaved = currentMonthSavings > 0 ? currentMonthSavings : Math.max(0, totalIncome - totalExpenses);
-      savingsRate = Math.min(100, Math.max(0, Math.round((monthSaved / totalIncome) * 100)));
-    } else {
-      const totalCashflow = currentMonthSavings + totalExpenses;
-      savingsRate = totalCashflow > 0 ? Math.round((currentMonthSavings / totalCashflow) * 100) : 0;
-    }
+    // Savings rate (Accurate real-time cashflow percentage: Savings / (Savings + Expenses))
+    const totalCashflow = currentMonthSavings + totalExpenses;
+    const savingsRate =
+      totalCashflow > 0 ? Math.round((currentMonthSavings / totalCashflow) * 100) : 0;
 
     // Dynamic Category Spend aggregation for current month
     const categorySpentMap: Record<string, number> = {};
@@ -671,6 +666,7 @@ export const db = {
 
     return {
       combinedNetSavings,
+      combinedMonthlySavings: Math.round(currentMonthSavings * 100) / 100,
       combinedTotalIncome: totalIncome,
       combinedTotalExpenses: Math.round(totalExpenses * 100) / 100,
       savingsRate,

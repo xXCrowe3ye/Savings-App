@@ -17,9 +17,7 @@ import {
   Home,
   Edit2,
   Receipt,
-  PauseCircle,
-  XCircle,
-  ShieldAlert,
+  Users,
   Loader2,
 } from "lucide-react";
 
@@ -41,11 +39,12 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 export function SubscriptionCard({ bill, onEdit }: SubscriptionCardProps) {
-  const { currency, getPartnerName, logTransaction, refreshData, triggerConfetti } = useApp();
+  const { currentUser, currency, getPartnerName, logTransaction, refreshData, triggerConfetti } = useApp();
   const [isLoggingPayment, setIsLoggingPayment] = useState(false);
   const [loggedSuccess, setLoggedSuccess] = useState(false);
 
   const Icon = CATEGORY_ICONS[bill.category] || Calendar;
+  const isShared = bill.paidBy === "shared";
   const isPartnerA = bill.paidBy === "partner_a";
   const partnerName = getPartnerName(bill.paidBy);
   const isPaused = bill.status === "paused";
@@ -55,15 +54,18 @@ export function SubscriptionCard({ bill, onEdit }: SubscriptionCardProps) {
   const handleLogPayment = async () => {
     try {
       setIsLoggingPayment(true);
+      const paidBy = isShared ? currentUser.partnerKey : (bill.paidBy as any);
+      const splitRatio = isShared ? "50/50" : isPartnerA ? "100/0" : "0/100";
+
       await logTransaction({
         type: "expense",
         amount: bill.amount,
         description: `${bill.title} (${new Date().toLocaleString("default", { month: "short" })} bill)`,
         category: bill.category,
         date: new Date().toISOString().split("T")[0],
-        paidBy: bill.paidBy,
-        splitRatio: "50/50",
-        notes: `Auto-logged from recurring bill: ${bill.title}`,
+        paidBy,
+        splitRatio,
+        notes: `Auto-logged from recurring bill: ${bill.title}${isShared ? " (50/50 Shared)" : ""}`,
         isRecurring: true,
       });
 
@@ -107,6 +109,8 @@ export function SubscriptionCard({ bill, onEdit }: SubscriptionCardProps) {
                 ? "bg-muted text-muted-foreground"
                 : isPaused
                 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                : isShared
+                ? "bg-gradient-to-tr from-indigo-500/15 to-teal-500/15 text-primary"
                 : isPartnerA
                 ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
                 : "bg-teal-500/10 text-teal-600 dark:text-teal-400"
@@ -118,6 +122,11 @@ export function SubscriptionCard({ bill, onEdit }: SubscriptionCardProps) {
           <div>
             <div className="flex items-center space-x-2">
               <h4 className="font-bold text-xs text-foreground">{bill.title}</h4>
+              {isShared && (
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                  50/50
+                </span>
+              )}
               {isPaused && (
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-400">
                   Paused
@@ -131,16 +140,18 @@ export function SubscriptionCard({ bill, onEdit }: SubscriptionCardProps) {
             </div>
 
             <div className="flex items-center space-x-2 text-[11px] text-muted-foreground mt-0.5">
-              <span>Day {bill.billingDay} of month</span>
+              <span>Day {bill.billingDay}</span>
               <span>•</span>
               <span
                 className={`font-semibold ${
-                  isPartnerA
+                  isShared
+                    ? "text-primary"
+                    : isPartnerA
                     ? "text-indigo-600 dark:text-indigo-400"
                     : "text-teal-600 dark:text-teal-400"
                 }`}
               >
-                {partnerName} pays
+                {isShared ? `Shared (${formatMoney(bill.amount / 2, currency)} ea)` : `${partnerName} pays`}
               </span>
               <span>•</span>
               <span className="capitalize">{bill.frequency}</span>
