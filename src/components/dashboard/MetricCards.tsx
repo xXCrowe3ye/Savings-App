@@ -30,7 +30,7 @@ export function MetricCards() {
             {formatMoney(netSavings, currency)}
           </div>
           <span className="text-[10px] text-muted-foreground">
-            Across {goals.length} active goals
+            {goals.length > 0 ? `Across ${goals.length} goals & general` : "Total accumulated"}
           </span>
         </div>
       </div>

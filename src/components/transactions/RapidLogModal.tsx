@@ -45,7 +45,7 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Groceries");
-  const [selectedGoalId, setSelectedGoalId] = useState(goals[0]?.id || "");
+  const [selectedGoalId, setSelectedGoalId] = useState<string>("general");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [paidBy, setPaidBy] = useState<PartnerKey>(currentUser.partnerKey);
   const [splitRatio, setSplitRatio] = useState<SplitRatio>("50/50");
@@ -55,13 +55,6 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Synchronize default selected goal when goals array loads
-  React.useEffect(() => {
-    if (goals.length > 0 && (!selectedGoalId || !goals.some((g) => g.id === selectedGoalId))) {
-      setSelectedGoalId(goals[0].id);
-    }
-  }, [goals, selectedGoalId]);
 
   if (!isOpen) return null;
 
@@ -123,10 +116,11 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
     e.preventDefault();
     if (!amount || parsedNumAmount <= 0) return;
 
-    const targetGoalId = selectedGoalId || goals[0]?.id;
+    const isGeneral = !selectedGoalId || selectedGoalId === "general";
+    const targetGoal = !isGeneral ? goals.find((g) => g.id === selectedGoalId) : null;
     const finalDescription =
       entryType === "savings"
-        ? description || `Deposit into ${goals.find((g) => g.id === targetGoalId)?.title || "Savings"}`
+        ? description || (targetGoal ? `Deposit into ${targetGoal.title}` : "General Savings Deposit")
         : description;
 
     if (!finalDescription) return;
@@ -137,7 +131,7 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
       amount: parsedNumAmount,
       description: finalDescription,
       category: entryType === "savings" ? "Savings" : category,
-      goalId: entryType === "savings" ? targetGoalId : undefined,
+      goalId: entryType === "savings" ? (isGeneral ? "general" : targetGoal?.id) : undefined,
       date,
       paidBy,
       splitRatio,
@@ -288,8 +282,9 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
               <select
                 value={selectedGoalId}
                 onChange={(e) => setSelectedGoalId(e.target.value)}
-                className="w-full px-3 py-2.5 text-xs bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full px-3 py-2.5 text-xs bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/40 font-medium"
               >
+                <option value="general">🏦 General Savings (Unallocated / Rainy Day)</option>
                 {goals.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.emoji} {g.title} ({formatMoney(g.currentAmount, currency)} / {formatMoney(g.targetAmount, currency)})

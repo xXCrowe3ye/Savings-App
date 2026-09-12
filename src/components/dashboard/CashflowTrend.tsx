@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import { useApp } from "@/context/AppContext";
 import { formatMoney } from "@/lib/utils";
-import { TrendingUp, BarChart3, LineChart, Sparkles, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { TrendingUp, BarChart3, LineChart, Sparkles, PiggyBank, ArrowDownRight } from "lucide-react";
 
 export function CashflowTrend() {
   const { currency, metrics, transactions } = useApp();
@@ -23,7 +23,7 @@ export function CashflowTrend() {
 
   const monthlyIncome = metrics?.combinedTotalIncome || 0;
 
-  // Dynamically compute historical trend data based on selected time range
+  // Dynamically compute historical savings vs expenses trend data based on selected time range
   const data = useMemo(() => {
     const result = [];
     const now = new Date();
@@ -41,13 +41,24 @@ export function CashflowTrend() {
         .filter((t) => (t.type || "expense") === "expense" && t.date?.startsWith(monthPrefix))
         .reduce((sum, t) => sum + (t.amount || 0), 0);
 
-      const netSurplus = monthlyIncome - monthExpenses;
-      const savingsRate = monthlyIncome > 0 ? Math.max(0, Math.round((netSurplus / monthlyIncome) * 100)) : 0;
+      // Real savings deposits in this month (goals & general savings)
+      const monthSavings = transactions
+        .filter((t) => t.type === "savings" && t.date?.startsWith(monthPrefix))
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+      const netSurplus = monthSavings - monthExpenses;
+      const totalMovement = monthSavings + monthExpenses;
+      const savingsRate =
+        monthlyIncome > 0
+          ? Math.min(100, Math.max(0, Math.round((monthSavings / monthlyIncome) * 100)))
+          : totalMovement > 0
+          ? Math.round((monthSavings / totalMovement) * 100)
+          : 0;
 
       result.push({
         month: isCurrentMonth ? `${monthLabel} (Now)` : monthLabel,
         rawMonth: monthLabel,
-        income: monthlyIncome,
+        savings: Math.round(monthSavings * 100) / 100,
         expenses: Math.round(monthExpenses * 100) / 100,
         netSurplus: Math.round(netSurplus * 100) / 100,
         savingsRate,
@@ -58,9 +69,10 @@ export function CashflowTrend() {
   }, [transactions, monthlyIncome, timeRange]);
 
   // Aggregate stats across the selected period
+  const totalPeriodSavings = data.reduce((acc, d) => acc + d.savings, 0);
   const totalPeriodExpenses = data.reduce((acc, d) => acc + d.expenses, 0);
+  const avgMonthlySavings = Math.round(totalPeriodSavings / (data.length || 1));
   const avgMonthlyExpenses = Math.round(totalPeriodExpenses / (data.length || 1));
-  const totalPeriodSurplus = data.reduce((acc, d) => acc + d.netSurplus, 0);
   const currentMonthData = data[data.length - 1];
 
   // Custom Rich Tooltip
@@ -70,19 +82,19 @@ export function CashflowTrend() {
     if (!itemData) return null;
 
     return (
-      <div className="bg-slate-950/95 backdrop-blur-md border border-slate-800 rounded-2xl p-3 shadow-2xl text-xs space-y-1.5 min-w-[170px] text-white">
+      <div className="bg-slate-950/95 backdrop-blur-md border border-slate-800 rounded-2xl p-3 shadow-2xl text-xs space-y-1.5 min-w-[180px] text-white">
         <p className="font-bold text-slate-300 border-b border-slate-800 pb-1 flex items-center justify-between">
           <span>{label}</span>
-          <span className="text-[10px] text-teal-400 font-semibold">{itemData.savingsRate}% saved</span>
+          <span className="text-[10px] text-emerald-400 font-semibold">{itemData.savingsRate}% saved</span>
         </p>
 
         <div className="space-y-1 pt-0.5 text-[11px]">
           <div className="flex items-center justify-between">
             <span className="flex items-center space-x-1.5 text-slate-400">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>Income</span>
+              <span>Savings</span>
             </span>
-            <span className="font-bold text-emerald-400">{formatMoney(itemData.income, currency)}</span>
+            <span className="font-bold text-emerald-400">{formatMoney(itemData.savings, currency)}</span>
           </div>
 
           <div className="flex items-center justify-between">
@@ -94,14 +106,19 @@ export function CashflowTrend() {
           </div>
 
           <div className="flex items-center justify-between border-t border-slate-800/80 pt-1 font-semibold">
-            <span className="text-slate-400">Net Surplus</span>
+            <span className="text-slate-400">Net Balance</span>
             <span className={itemData.netSurplus >= 0 ? "text-teal-300 font-bold" : "text-rose-400 font-bold"}>
-              {formatMoney(itemData.netSurplus, currency)}
+              {itemData.netSurplus >= 0 ? "+" : ""}{formatMoney(itemData.netSurplus, currency)}
             </span>
           </div>
         </div>
       </div>
     );
+  };
+
+  const formatYAxis = (v: number) => {
+    if (v >= 1000) return `$${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k`;
+    return `$${v}`;
   };
 
   return (
@@ -112,11 +129,11 @@ export function CashflowTrend() {
           <div className="flex items-center space-x-2">
             <TrendingUp className="w-4 h-4 text-primary" />
             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Cash Flow Trends &amp; Surplus
+              Savings vs. Expenses Trends
             </h4>
           </div>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Avg spend: <b>{formatMoney(avgMonthlyExpenses, currency)}/mo</b> • Period net: <b>+{formatMoney(totalPeriodSurplus, currency)}</b>
+            Avg saved: <b>{formatMoney(avgMonthlySavings, currency)}/mo</b> • Avg spent: <b>{formatMoney(avgMonthlyExpenses, currency)}/mo</b> • Period Saved: <b>+{formatMoney(totalPeriodSavings, currency)}</b>
           </p>
         </div>
 
@@ -165,18 +182,22 @@ export function CashflowTrend() {
         <div className="flex items-center space-x-3">
           <span className="flex items-center space-x-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs" />
-            <span className="text-muted-foreground font-medium">Income</span>
+            <span className="text-muted-foreground font-medium flex items-center gap-1">
+              <PiggyBank className="w-3 h-3 text-emerald-500 inline" /> Savings
+            </span>
           </span>
           <span className="flex items-center space-x-1.5">
             <span className="w-2 h-2 rounded-full bg-indigo-500 shadow-xs" />
-            <span className="text-muted-foreground font-medium">Expenses</span>
+            <span className="text-muted-foreground font-medium flex items-center gap-1">
+              <ArrowDownRight className="w-3 h-3 text-indigo-500 inline" /> Expenses
+            </span>
           </span>
         </div>
 
         {currentMonthData && (
           <div className="flex items-center space-x-1 text-teal-600 dark:text-teal-400 font-semibold">
             <Sparkles className="w-3 h-3" />
-            <span>This Month Surplus: {formatMoney(currentMonthData.netSurplus, currency)}</span>
+            <span>Saved: {formatMoney(currentMonthData.savings, currency)} • Spent: {formatMoney(currentMonthData.expenses, currency)}</span>
           </div>
         )}
       </div>
@@ -185,32 +206,34 @@ export function CashflowTrend() {
       <div className="h-48 w-full pt-2">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === "area" ? (
-            <AreaChart data={data} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+            <AreaChart data={data} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
               <defs>
-                <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                <linearGradient id="savingsGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
                   <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
                 </linearGradient>
                 <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.45} />
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
                   <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.15)" />
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
+              <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={formatYAxis} />
               <Tooltip content={<CustomTooltip />} />
               <Area
                 type="monotone"
-                dataKey="income"
+                dataKey="savings"
+                name="Savings"
                 stroke="#10b981"
                 strokeWidth={2.5}
                 fillOpacity={1}
-                fill="url(#incomeGradient)"
+                fill="url(#savingsGradient)"
               />
               <Area
                 type="monotone"
                 dataKey="expenses"
+                name="Expenses"
                 stroke="#6366f1"
                 strokeWidth={2.5}
                 fillOpacity={1}
@@ -218,13 +241,13 @@ export function CashflowTrend() {
               />
             </AreaChart>
           ) : (
-            <BarChart data={data} barGap={4} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+            <BarChart data={data} barGap={4} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.15)" />
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
+              <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={formatYAxis} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={18} />
-              <Bar dataKey="expenses" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={18} />
+              <Bar dataKey="savings" name="Savings" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={18} />
+              <Bar dataKey="expenses" name="Expenses" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={18} />
             </BarChart>
           )}
         </ResponsiveContainer>

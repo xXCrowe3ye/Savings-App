@@ -561,14 +561,26 @@ export const db = {
       .filter((t) => t.paidBy === "partner_b")
       .reduce((acc, t) => acc + (t.amount || 0), 0);
 
-    // Total savings across goals
-    const combinedNetSavings = goals.reduce((acc, g) => acc + (g.currentAmount || 0), 0);
+    // Total savings: sum of all active goals + general savings deposits
+    const goalSavings = goals.reduce((acc, g) => acc + (g.currentAmount || 0), 0);
+    const savingsTxs = txs.filter((t) => t.type === "savings");
+    const generalSavingsTxs = savingsTxs.filter((t) => !t.goalId || t.goalId === "general");
+    const generalSavings = generalSavingsTxs.reduce((acc, t) => acc + (t.amount || 0), 0);
+    const combinedNetSavings = goalSavings + generalSavings;
 
-    // Savings rate (Current month cash surplus percentage)
-    const savingsRate =
-      totalIncome > 0
-        ? Math.max(0, Math.round(((totalIncome - totalExpenses) / totalIncome) * 100))
-        : 0;
+    // Current month savings deposits
+    const currentMonthSavingsTxs = savingsTxs.filter((t) => t.date.startsWith(currentMonthPrefix));
+    const currentMonthSavings = currentMonthSavingsTxs.reduce((acc, t) => acc + (t.amount || 0), 0);
+
+    // Savings rate (Accurate real-time percentage)
+    let savingsRate = 0;
+    if (totalIncome > 0) {
+      const monthSaved = currentMonthSavings > 0 ? currentMonthSavings : Math.max(0, totalIncome - totalExpenses);
+      savingsRate = Math.min(100, Math.max(0, Math.round((monthSaved / totalIncome) * 100)));
+    } else {
+      const totalCashflow = currentMonthSavings + totalExpenses;
+      savingsRate = totalCashflow > 0 ? Math.round((currentMonthSavings / totalCashflow) * 100) : 0;
+    }
 
     // Dynamic Category Spend aggregation for current month
     const categorySpentMap: Record<string, number> = {};

@@ -83,14 +83,13 @@ export async function POST(req: Request) {
       });
     }
 
-    // If type is savings deposit and a goal is targeted, credit the goal immediately!
+    // If type is savings deposit and a specific goal is targeted, credit the goal immediately!
     if (data.type === "savings") {
       const goals = await db.getGoals();
-      const targetGoal = data.goalId
-        ? goals.find((g) => g.id === data.goalId)
-        : goals.length > 0
-        ? goals[0]
-        : undefined;
+      const targetGoal =
+        data.goalId && data.goalId !== "general"
+          ? goals.find((g) => g.id === data.goalId)
+          : undefined;
 
       if (targetGoal) {
         let addA = 0;
