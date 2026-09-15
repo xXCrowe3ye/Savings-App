@@ -25,7 +25,7 @@ export default function GoalsPage() {
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
       {/* Top Banner */}
-      <div className="bg-gradient-to-br from-teal-600 via-teal-700 to-indigo-700 rounded-3xl p-5 text-white shadow-xl relative overflow-hidden">
+      <div data-tour="goals-hero" className="bg-gradient-to-br from-teal-600 via-teal-700 to-indigo-700 rounded-3xl p-5 text-white shadow-xl relative overflow-hidden">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
             <PiggyBank className="w-5 h-5 text-teal-200" />

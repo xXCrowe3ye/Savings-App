@@ -16,7 +16,7 @@ export function SafeToSpendCard() {
   const isTight = safeDaily < 20;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl p-5 bg-gradient-to-br from-indigo-900/90 via-indigo-950 to-slate-950 text-white shadow-xl border border-indigo-500/20">
+    <div data-tour="safe-to-spend" className="relative overflow-hidden rounded-3xl p-5 bg-gradient-to-br from-indigo-900/90 via-indigo-950 to-slate-950 text-white shadow-xl border border-indigo-500/20">
       {/* Background glow effects */}
       <div className="absolute top-0 right-0 -mr-8 -mt-8 w-36 h-36 bg-teal-400/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-36 h-36 bg-indigo-500/30 rounded-full blur-3xl pointer-events-none" />

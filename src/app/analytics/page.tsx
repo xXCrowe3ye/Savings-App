@@ -164,7 +164,7 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
       {/* Dynamic Cash Flow Forecasting Hero */}
-      <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-teal-950 rounded-3xl p-5 text-white border border-indigo-500/20 shadow-xl space-y-4">
+      <div data-tour="analytics-hero" className="bg-gradient-to-br from-indigo-950 via-slate-900 to-teal-950 rounded-3xl p-5 text-white border border-indigo-500/20 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <div className="flex items-center space-x-2">

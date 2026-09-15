@@ -29,7 +29,7 @@ export function MobileBottomNav({ onOpenQuickLog }: MobileBottomNavProps) {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 glass-nav border-t pb-safe">
+    <div data-tour="bottom-nav" className="fixed bottom-0 left-0 right-0 z-40 glass-nav border-t pb-safe">
       <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between relative">
         {/* First 2 items */}
         {navItems.slice(0, 2).map((item) => {
@@ -54,6 +54,7 @@ export function MobileBottomNav({ onOpenQuickLog }: MobileBottomNavProps) {
         {/* Center Floating Action Button [+] */}
         <div className="flex-1 flex justify-center -mt-6">
           <button
+            data-tour="quick-log-fab"
             onClick={onOpenQuickLog}
             className="w-13 h-13 rounded-full bg-gradient-to-tr from-indigo-600 to-teal-400 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-transform ring-4 ring-background"
             aria-label="Add transaction"

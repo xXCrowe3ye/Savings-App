@@ -35,7 +35,7 @@ export function TopHeader() {
     <header className="sticky top-0 z-40 w-full glass-nav px-4 py-3 border-b">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         {/* Brand & Active Profile */}
-        <div className="flex items-center space-x-3">
+        <div data-tour="header-profile" className="flex items-center space-x-3 rounded-2xl p-1 transition-all">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-teal-400 flex items-center justify-center shadow-md shadow-indigo-500/20">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
@@ -83,7 +83,7 @@ export function TopHeader() {
         </div>
 
         {/* Action Controls: Offline status, Currency, Refresh, Lock, Sign Out */}
-        <div className="flex items-center space-x-2">
+        <div data-tour="header-actions" className="flex items-center space-x-2">
           {isOffline && (
             <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium">
               <WifiOff className="w-3.5 h-3.5" />

@@ -41,7 +41,7 @@ export default function BudgetPage() {
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
       {/* Hero Budget Overview */}
-      <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-teal-600 rounded-3xl p-5 text-white shadow-xl relative overflow-hidden">
+      <div data-tour="budget-hero" className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-teal-600 rounded-3xl p-5 text-white shadow-xl relative overflow-hidden">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
             <PieChart className="w-5 h-5 text-teal-200" />

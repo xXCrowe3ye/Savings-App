@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import {
@@ -22,6 +22,8 @@ import {
   MapPin,
   Flame,
   Search,
+  Scale,
+  ExternalLink,
 } from "lucide-react";
 
 interface TourStep {
@@ -29,141 +31,177 @@ interface TourStep {
   title: string;
   subtitle: string;
   route: string;
+  selector: string;
   tag: string;
   icon: React.ElementType;
   description: string;
   highlights: string[];
   tips: string;
+  preferredPosition?: "top" | "bottom" | "auto";
 }
 
 const TOUR_STEPS: TourStep[] = [
   {
     id: "welcome",
-    title: "Welcome to Babi-Savings",
+    title: "Couple Profile & Identity",
     subtitle: "Private Joint Finance for Couples",
     route: "/",
-    tag: "Overview",
+    selector: '[data-tour="header-profile"]',
+    tag: "Couples",
     icon: Sparkles,
     description:
-      "A stress-free financial sanctuary built specifically for couples. Track joint expenses, split costs fairly without awkward money talks, and build your shared wealth together in real time.",
+      "Welcome to Babi-Savings! Switch active partner, customize nicknames, avatar photos, and theme colors without linking sensitive bank logins.",
     highlights: [
-      "No bank account linking required for ultimate privacy",
-      "Seamless cloud sync between both partner devices",
-      "Real-time visibility without feeling micromanaged",
+      "No bank account linking required",
+      "Instant cloud & offline sync",
+      "Personalized partner colors and avatars",
     ],
-    tips: "Tip: Customize your nicknames, avatar photos, and theme colors in the Top Profile anytime!",
+    tips: "Tip: Tap 'Edit' anytime to change your nickname or avatar.",
+    preferredPosition: "bottom",
   },
   {
     id: "safe-to-spend",
     title: "Safe-to-Spend Allowance",
     subtitle: "Your Daily Spending Guardrail",
     route: "/",
+    selector: '[data-tour="safe-to-spend"]',
     tag: "Dashboard",
     icon: ShieldCheck,
     description:
-      "Our smart algorithm calculates exactly how much you can spend per day without falling short on upcoming bills, monthly budget caps, or savings targets.",
+      "Dynamic daily allowance calculated from your monthly budget minus upcoming bills and savings targets. Stay in the green to avoid end-of-month stress.",
     highlights: [
-      "Dynamic daily allowance updated with every expense",
+      "Auto-updates with every logged transaction",
       "Pace status (On Track, Caution, Over Pace)",
-      "Daily vs. Month-to-Date breakdown",
+      "Daily vs Month-to-Date breakdown",
     ],
-    tips: "Tip: Stay in the green to guarantee your month-end savings goal is met!",
+    tips: "Tip: Check this daily to know your exact comfortable spending allowance!",
+    preferredPosition: "bottom",
   },
   {
     id: "quick-log",
-    title: "Center [+] Rapid Log & Split",
+    title: "Rapid Log & Fair Splits",
     subtitle: "Log Expenses in 5 Seconds",
     route: "/",
+    selector: '[data-tour="quick-log-fab"]',
     tag: "Quick Action",
     icon: PlusCircle,
     description:
-      "Tap the glowing center [+] button anytime to record an expense. Choose equal 50/50 splits, income-proportional ratios, or 100/0 solo funding with optional receipt attachments.",
+      "Tap this center [+] button anytime to log shared expenses. Split 50/50, custom income ratios, or 100/0 with receipt scanning and micro-roundups.",
     highlights: [
-      "50/50, 60/40, 70/30 or custom income-weighted split",
-      "Spare-change roundups swept into joint savings",
-      "Partner approval alerts for high-value purchases",
+      "50/50, 60/40, 70/30 or custom income ratio",
+      "Spare-change roundups swept into savings",
+      "Partner approval for high-value purchases",
     ],
-    tips: "Tip: Set a large expense threshold (e.g. $100) to notify your partner before finalizing!",
+    tips: "Tip: Long-press or tap [+] on any page for instant logging.",
+    preferredPosition: "top",
+  },
+  {
+    id: "debt-settlement",
+    title: "Couple IOU & Debt Tracker",
+    subtitle: "Fair Balances Without Math",
+    route: "/",
+    selector: '[data-tour="debt-settlement"]',
+    tag: "Settlement",
+    icon: Scale,
+    description:
+      "Tracks who paid for what and computes exactly who owes whom. Settle up with a single tap to log a clean settlement payment.",
+    highlights: [
+      "Automated IOU balance tracking",
+      "One-tap debt settlement record",
+      "Accounts for non-50/50 shared ratios",
+    ],
+    tips: "Tip: Tap 'Settle Up' to clear out IOUs when you transfer money to your partner.",
+    preferredPosition: "top",
   },
   {
     id: "budgets",
-    title: "Shared Category Budgets",
-    subtitle: "Flexible Caps with Rollovers",
+    title: "Shared Budgets & 50/30/20",
+    subtitle: "Category Limits with Rollovers",
     route: "/budget",
+    selector: '[data-tour="budget-hero"]',
     tag: "Budgets",
     icon: PieChart,
     description:
-      "Organize shared living expenses into clear categories like Groceries, Rent, Utilities, and Dining. Unspent funds rollover to the next month as a reward for disciplined spending.",
+      "Manage category caps (Groceries, Dining, Rent). Unspent cash rolls over to the next month to reward mindful habits.",
     highlights: [
-      "Live percentage bars and pace-per-day gauges",
-      "50/30/20 Rule Smart Budget Calculator modal",
-      "Automatic rollover accumulation for surplus cash",
+      "Live pace-per-day gauges",
+      "50/30/20 smart budget calculator",
+      "Automatic surplus rollover tracking",
     ],
-    tips: "Tip: Tap '50/30/20' at the top of the Budget tab to automatically balance your joint income!",
+    tips: "Tip: Tap '50/30/20' at the top to balance Needs, Wants & Savings!",
+    preferredPosition: "bottom",
   },
   {
     id: "goals",
-    title: "Joint Savings & Wishlists",
+    title: "Shared Goals & Wishlists",
     subtitle: "Fund Dreams & Vacations Together",
     route: "/goals",
+    selector: '[data-tour="goals-hero"]',
     tag: "Goals",
     icon: Target,
     description:
-      "Create shared targets for emergency funds, dream vacations, weddings, or home renovations. Contribute individually or jointly and track your milestone progress visually.",
+      "Save together for vacations, wedding funds, or emergency cushions. Boost targets with one-tap lump sums and spare-change roundups.",
     highlights: [
       "Target dates with required monthly pacing",
-      "One-tap 'Boost Goal' with celebratory confetti",
-      "Automatic spare-change roundup integrations",
+      "One-tap Windfall Boosts with confetti",
+      "Automated coffee-run spare change sweeps",
     ],
-    tips: "Tip: Turn on 'Roundup Savings' on your top goal to build wealth effortlessly from daily coffee runs!",
+    tips: "Tip: Enable 'Roundup Savings' to save effortlessly on every purchase.",
+    preferredPosition: "bottom",
   },
   {
     id: "recurring",
     title: "Recurring Bills & Calendar",
     subtitle: "Never Miss a Shared Due Date",
     route: "/recurring",
+    selector: '[data-tour="recurring-hero"]',
     tag: "Bills",
     icon: Calendar,
     description:
-      "Manage subscriptions, rent, insurance, and utilities in one centralized dashboard. Visual calendar view and due-date alerts ensure both partners know who is responsible.",
+      "Manage subscriptions, rent, and utilities in one centralized place. Calendar view ensures both partners know who pays what and when.",
     highlights: [
       "Assigned payer badge and custom split breakdown",
-      "Monthly and annual cost projections",
-      "Color-coded status (Due Soon, Overdue, Paid)",
+      "Monthly & annual cost projections",
+      "Price hike & unused subscription alerts",
     ],
-    tips: "Tip: Mark bills as paid with one tap to automatically log the transaction into your shared history!",
+    tips: "Tip: Switch to Calendar view to see upcoming due dates at a glance.",
+    preferredPosition: "bottom",
   },
   {
     id: "analytics",
-    title: "Cashflow Trends & Insights",
+    title: "Cashflow Trends & Velocity",
     subtitle: "Deep Dive into Spending Habits",
     route: "/analytics",
+    selector: '[data-tour="analytics-hero"]',
     tag: "Analytics",
     icon: TrendingUp,
     description:
-      "Gain total transparency into your couple cashflow. Interactive category donut charts, monthly spending trajectories, and partner contribution breakdowns highlight your financial strengths.",
+      "Interactive graphs project your joint wealth growth, category distribution, and net savings velocity over 30, 90, 180 days or 1 year.",
     highlights: [
-      "Interactive category donut charts with tap breakdown",
-      "Monthly cashflow comparison and net savings rate",
-      "Partner-by-partner contribution equity gauge",
+      "Forecasted savings growth trajectory",
+      "Partner spending equity ratio",
+      "One-click CSV & JSON export",
     ],
-    tips: "Tip: Check the Net Savings Rate monthly to measure your collective financial velocity!",
+    tips: "Tip: Check the savings velocity to see how fast your joint vault is growing.",
+    preferredPosition: "bottom",
   },
   {
     id: "security",
-    title: "PIN Vault & Offline PWA Sync",
-    subtitle: "Total Privacy & Anywhere Access",
+    title: "PIN Vault & Offline PWA",
+    subtitle: "Bank-Grade Privacy & Anywhere Access",
     route: "/",
+    selector: '[data-tour="header-actions"]',
     tag: "Privacy & Sync",
     icon: Lock,
     description:
-      "Your financial intimacy is protected. Lock your app with a 4-digit PIN for private viewing. Log expenses completely offline on flights or underground subways—they sync automatically upon reconnecting.",
+      "Lock your app with a 4-digit PIN for private browsing. Log expenses completely offline—they sync to the cloud automatically once reconnected.",
     highlights: [
       "Encrypted 4-digit PIN lock with biometric feel",
       "Offline transaction queue with background sync",
-      "Installable as a standalone Progressive Web App (PWA)",
+      "Multi-currency selector (USD, EUR, GBP, PHP, JPY)",
     ],
     tips: "Tip: Tap the lock icon in the top header anytime to instantly secure your session!",
+    preferredPosition: "bottom",
   },
 ];
 
@@ -206,63 +244,177 @@ const CHEAT_SHEET_FAQS = [
   },
 ];
 
+interface TargetRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  bottom: number;
+  right: number;
+}
+
 export function FloatingGuideTour() {
   const router = useRouter();
   const pathname = usePathname();
   const { triggerConfetti } = useApp();
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"tour" | "cheatsheet" | "navigate">("tour");
+  const [isTourActive, setIsTourActive] = useState(false);
+  const [isHubOpen, setIsHubOpen] = useState(false);
+  const [hubTab, setHubTab] = useState<"cheatsheet" | "navigate">("cheatsheet");
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [showFirstTimeBadge, setShowFirstTimeBadge] = useState(false);
   const [faqSearchQuery, setFaqSearchQuery] = useState("");
   const [expandedFaqIndex, setExpandedFaqIndex] = useState<number | null>(0);
 
-  // Check if user has completed tour previously
+  // Target element measurement state
+  const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<"top" | "bottom">("bottom");
+  const [tooltipCoords, setTooltipCoords] = useState<{ top: number; left: number } | null>(null);
+
+  const resizeObserverRef = useRef<number | null>(null);
+
+  // Check first-time tour state
   useEffect(() => {
     const isCompleted = localStorage.getItem("babi_savings_tour_completed");
     if (!isCompleted) {
       setShowFirstTimeBadge(true);
     }
 
-    // Global listener so Header / Profile can trigger the tour
     const handleOpenTour = (e: Event) => {
       const customEvent = e as CustomEvent;
-      if (customEvent.detail?.tab) {
-        setActiveTab(customEvent.detail.tab);
+      if (customEvent.detail?.tab === "cheatsheet" || customEvent.detail?.tab === "navigate") {
+        setHubTab(customEvent.detail.tab);
+        setIsHubOpen(true);
+        setIsTourActive(false);
+      } else {
+        handleStartTour();
       }
-      setIsOpen(true);
     };
 
     window.addEventListener("open-app-tour", handleOpenTour);
     return () => window.removeEventListener("open-app-tour", handleOpenTour);
   }, []);
 
-  // Keyboard navigation for tour
+  const currentStep = TOUR_STEPS[currentStepIndex];
+
+  // Measure target DOM element and calculate position
+  const measureTarget = useCallback(() => {
+    if (!isTourActive || !currentStep) return;
+
+    const el = document.querySelector(currentStep.selector);
+    if (!el) {
+      setTargetRect(null);
+      setTooltipCoords(null);
+      return;
+    }
+
+    const rect = el.getBoundingClientRect();
+    setTargetRect({
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+      bottom: rect.bottom,
+      right: rect.right,
+    });
+
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const cardWidth = Math.min(360, viewportWidth - 32);
+    const cardHeight = 240; // estimated height of card
+
+    // Determine position: above or below target
+    let pos: "top" | "bottom" = currentStep.preferredPosition === "top" ? "top" : "bottom";
+    if (currentStep.preferredPosition === "auto" || !currentStep.preferredPosition) {
+      if (rect.bottom + cardHeight + 20 > viewportHeight && rect.top > cardHeight + 20) {
+        pos = "top";
+      } else {
+        pos = "bottom";
+      }
+    } else if (pos === "bottom" && rect.bottom + cardHeight + 20 > viewportHeight) {
+      pos = "top";
+    } else if (pos === "top" && rect.top - cardHeight - 20 < 0) {
+      pos = "bottom";
+    }
+
+    setTooltipPosition(pos);
+
+    // Calculate left coordinate clamped within screen
+    const targetCenterX = rect.left + rect.width / 2;
+    let computedLeft = targetCenterX - cardWidth / 2;
+    computedLeft = Math.max(16, Math.min(computedLeft, viewportWidth - cardWidth - 16));
+
+    // Calculate top coordinate
+    let computedTop = 0;
+    if (pos === "bottom") {
+      computedTop = rect.bottom + 12;
+    } else {
+      computedTop = rect.top - 12; // in CSS we can translate-y -100%
+    }
+
+    setTooltipCoords({
+      top: computedTop,
+      left: computedLeft,
+    });
+  }, [isTourActive, currentStep]);
+
+  // Scroll into view & measure when step changes or route changes
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isTourActive || !currentStep) return;
+
+    let retries = 0;
+    const findAndScroll = () => {
+      const el = document.querySelector(currentStep.selector);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        setTimeout(measureTarget, 200);
+      } else if (retries < 10) {
+        retries++;
+        setTimeout(findAndScroll, 100);
+      }
+    };
+
+    findAndScroll();
+
+    const handleScrollOrResize = () => {
+      if (resizeObserverRef.current) cancelAnimationFrame(resizeObserverRef.current);
+      resizeObserverRef.current = requestAnimationFrame(measureTarget);
+    };
+
+    window.addEventListener("scroll", handleScrollOrResize, { passive: true });
+    window.addEventListener("resize", handleScrollOrResize, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize);
+      window.removeEventListener("resize", handleScrollOrResize);
+      if (resizeObserverRef.current) cancelAnimationFrame(resizeObserverRef.current);
+    };
+  }, [isTourActive, currentStepIndex, pathname, measureTarget, currentStep]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isTourActive) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setIsOpen(false);
-      } else if (e.key === "ArrowRight" && activeTab === "tour") {
+        setIsTourActive(false);
+      } else if (e.key === "ArrowRight") {
         handleNextStep();
-      } else if (e.key === "ArrowLeft" && activeTab === "tour") {
+      } else if (e.key === "ArrowLeft") {
         handlePrevStep();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, activeTab, currentStepIndex]);
-
-  const currentStep = TOUR_STEPS[currentStepIndex];
+  }, [isTourActive, currentStepIndex]);
 
   const handleStartTour = () => {
-    setActiveTab("tour");
-    setCurrentStepIndex(0);
-    setIsOpen(true);
+    setIsHubOpen(false);
     setShowFirstTimeBadge(false);
+    setCurrentStepIndex(0);
+    setIsTourActive(true);
+
     if (pathname !== TOUR_STEPS[0].route) {
       router.push(TOUR_STEPS[0].route);
     }
@@ -277,7 +429,6 @@ export function FloatingGuideTour() {
         router.push(nextRoute);
       }
     } else {
-      // Tour completed!
       handleCompleteTour();
     }
   };
@@ -293,19 +444,11 @@ export function FloatingGuideTour() {
     }
   };
 
-  const handleJumpToStep = (index: number) => {
-    setCurrentStepIndex(index);
-    const targetRoute = TOUR_STEPS[index].route;
-    if (pathname !== targetRoute) {
-      router.push(targetRoute);
-    }
-  };
-
   const handleCompleteTour = () => {
     localStorage.setItem("babi_savings_tour_completed", "true");
     setShowFirstTimeBadge(false);
     triggerConfetti();
-    setIsOpen(false);
+    setIsTourActive(false);
   };
 
   const filteredFaqs = CHEAT_SHEET_FAQS.filter(
@@ -317,8 +460,8 @@ export function FloatingGuideTour() {
 
   return (
     <>
-      {/* 1. First-time User Welcome Banner (Floating above bottom right) */}
-      {showFirstTimeBadge && !isOpen && (
+      {/* 1. First-Time Welcome Prompt (Compact floating invitation on bottom right) */}
+      {showFirstTimeBadge && !isTourActive && !isHubOpen && (
         <div className="fixed bottom-20 right-4 z-40 max-w-xs animate-in slide-in-from-bottom-5 duration-500">
           <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-teal-600 text-white p-3.5 rounded-2xl shadow-xl border border-white/20 backdrop-blur-md flex items-start space-x-3">
             <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0 mt-0.5 animate-pulse">
@@ -327,7 +470,7 @@ export function FloatingGuideTour() {
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold leading-tight">Welcome to Babi-Savings!</p>
               <p className="text-[11px] text-white/80 mt-0.5 leading-snug">
-                Take a 1-minute interactive tour to master all couple features.
+                Take a quick spotlight tour to discover where everything is.
               </p>
               <div className="flex items-center space-x-2 mt-2">
                 <button
@@ -356,194 +499,253 @@ export function FloatingGuideTour() {
         </div>
       )}
 
-      {/* 2. Floating Interactive Guide Trigger Bubble (Docked above bottom nav on right) */}
-      <div className="fixed bottom-20 right-4 z-40 print:hidden">
-        <button
-          onClick={() => setIsOpen(true)}
-          className="group relative flex items-center space-x-2 pl-3.5 pr-4 py-2.5 rounded-full bg-card/90 dark:bg-slate-900/90 hover:bg-card dark:hover:bg-slate-800 text-foreground border border-border shadow-lg hover:shadow-indigo-500/20 backdrop-blur-md transition-all active:scale-95 hover:border-indigo-500/50 ring-2 ring-primary/20"
-          aria-label="Open App Tour & Guide"
-          title="App Guide & Feature Tour"
-        >
-          {/* Animated Glowing Ring */}
-          <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-teal-400 opacity-30 group-hover:opacity-75 blur-sm transition duration-300 group-hover:duration-200" />
-
-          <div className="relative flex items-center space-x-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-600 to-teal-400 flex items-center justify-center text-white shadow-xs">
-              <Compass className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform duration-300" />
+      {/* 2. Floating Persistent Guide Trigger Pill (Docked nicely above bottom nav) */}
+      {!isTourActive && (
+        <div className="fixed bottom-20 right-4 z-40 print:hidden flex items-center space-x-2">
+          <button
+            onClick={() => setIsHubOpen(true)}
+            className="group relative flex items-center space-x-2 pl-3.5 pr-4 py-2.5 rounded-full bg-card/90 dark:bg-slate-900/90 hover:bg-card dark:hover:bg-slate-800 text-foreground border border-border shadow-lg hover:shadow-indigo-500/20 backdrop-blur-md transition-all active:scale-95 hover:border-indigo-500/50 ring-2 ring-primary/20"
+            aria-label="Open App Tour & Guide"
+            title="App Guide & Feature Tour"
+          >
+            <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-teal-400 opacity-30 group-hover:opacity-75 blur-sm transition duration-300 group-hover:duration-200" />
+            <div className="relative flex items-center space-x-2">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-600 to-teal-400 flex items-center justify-center text-white shadow-xs">
+                <Compass className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform duration-300" />
+              </div>
+              <span className="text-xs font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-teal-500 dark:from-indigo-400 dark:to-teal-300 bg-clip-text text-transparent">
+                Guide
+              </span>
             </div>
-            <span className="text-xs font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-teal-500 dark:from-indigo-400 dark:to-teal-300 bg-clip-text text-transparent">
-              Guide
-            </span>
-          </div>
-        </button>
-      </div>
+          </button>
+        </div>
+      )}
 
-      {/* 3. Interactive Modal / Tour Spotlight Drawer */}
-      {isOpen && (
+      {/* 3. ANCHORED SPOTLIGHT TOUR OVERLAY & FLOATING CALLOUT */}
+      {isTourActive && (
+        <div className="fixed inset-0 z-50 pointer-events-none">
+          {/* A. Non-blocking luminous target highlight ring on target element */}
+          {targetRect && (
+            <div
+              className="absolute pointer-events-none transition-all duration-300 ease-out"
+              style={{
+                top: `${Math.max(0, targetRect.top - 6)}px`,
+                left: `${Math.max(0, targetRect.left - 6)}px`,
+                width: `${targetRect.width + 12}px`,
+                height: `${targetRect.height + 12}px`,
+                borderRadius: "20px",
+                boxShadow: "0 0 0 4px rgba(99, 102, 241, 0.6), 0 0 25px 8px rgba(45, 212, 191, 0.4)",
+                border: "2px solid rgba(255, 255, 255, 0.9)",
+              }}
+            >
+              {/* Pulsing Beacon Dot */}
+              <span className="absolute -top-2 -right-2 flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-indigo-600 border-2 border-white" />
+              </span>
+            </div>
+          )}
+
+          {/* B. Floating Anchored Dialogue Card */}
+          <div
+            className="absolute pointer-events-auto transition-all duration-300 ease-out z-50"
+            style={{
+              top: tooltipCoords
+                ? `${tooltipCoords.top}px`
+                : "50%",
+              left: tooltipCoords
+                ? `${tooltipCoords.left}px`
+                : "50%",
+              transform: tooltipCoords
+                ? tooltipPosition === "top"
+                  ? "translateY(-100%)"
+                  : "translateY(0)"
+                : "translate(-50%, -50%)",
+              width: "calc(100vw - 32px)",
+              maxWidth: "360px",
+            }}
+          >
+            {/* Popover Card Container */}
+            <div className="relative bg-card/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 border-indigo-500/40 rounded-3xl p-4 shadow-2xl shadow-indigo-950/40 text-foreground space-y-3 animate-in fade-in zoom-in-95 duration-200">
+              {/* Pointer Triangle */}
+              {targetRect && tooltipCoords && (
+                <div
+                  className={`absolute left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-card/95 dark:bg-slate-900/95 border-indigo-500/40 rotate-45 ${
+                    tooltipPosition === "bottom"
+                      ? "-top-2 border-t-2 border-l-2"
+                      : "-bottom-2 border-b-2 border-r-2"
+                  }`}
+                />
+              )}
+
+              {/* Card Top: Step Tag, Counter, and Close */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400">
+                    {currentStep.tag}
+                  </span>
+                  <span className="text-[11px] font-semibold text-muted-foreground">
+                    {currentStepIndex + 1} / {TOUR_STEPS.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-1">
+                  {/* Step Progress Dots */}
+                  <div className="flex items-center space-x-1 mr-1">
+                    {TOUR_STEPS.map((step, idx) => (
+                      <span
+                        key={step.id}
+                        className={`h-1.5 rounded-full transition-all ${
+                          idx === currentStepIndex
+                            ? "w-4 bg-primary"
+                            : idx < currentStepIndex
+                            ? "w-1.5 bg-primary/40"
+                            : "w-1.5 bg-muted-foreground/30"
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => setIsTourActive(false)}
+                    className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                    aria-label="Exit tour"
+                    title="Exit tour"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Step Title & Icon */}
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-teal-400 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
+                  {React.createElement(currentStep.icon, { className: "w-5 h-5" })}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-sm text-foreground leading-tight">
+                    {currentStep.title}
+                  </h4>
+                  <p className="text-[11px] font-medium text-primary mt-0.5 leading-snug">
+                    {currentStep.subtitle}
+                  </p>
+                </div>
+              </div>
+
+              {/* Description */}
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {currentStep.description}
+              </p>
+
+              {/* Quick Tip Pill */}
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-2.5 py-1.5 flex items-start space-x-2">
+                <Flame className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
+                  {currentStep.tips}
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                <button
+                  onClick={() => {
+                    localStorage.setItem("babi_savings_tour_completed", "true");
+                    setIsTourActive(false);
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground font-semibold px-1"
+                >
+                  Skip
+                </button>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handlePrevStep}
+                    disabled={currentStepIndex === 0}
+                    className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-secondary text-foreground hover:bg-secondary/80 disabled:opacity-40 disabled:pointer-events-none transition-colors flex items-center space-x-1"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Back</span>
+                  </button>
+
+                  <button
+                    onClick={handleNextStep}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-teal-500 text-white shadow-md shadow-indigo-500/25 hover:scale-105 active:scale-95 transition-all flex items-center space-x-1"
+                  >
+                    <span>
+                      {currentStepIndex === TOUR_STEPS.length - 1
+                        ? "Finish 🎉"
+                        : "Next"}
+                    </span>
+                    {currentStepIndex < TOUR_STEPS.length - 1 && (
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. APP GUIDE & CHEAT SHEET HUB (Accessible from Guide Pill anytime) */}
+      {isHubOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-card border border-border rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Modal Header */}
+          <div className="bg-card border border-border rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header */}
             <div className="p-4 border-b bg-muted/40 flex items-center justify-between">
               <div className="flex items-center space-x-2.5">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-teal-400 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
                   <Compass className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm leading-tight">Babi-Savings Guide</h3>
+                  <h3 className="font-bold text-sm leading-tight">Babi-Savings Guide Hub</h3>
                   <p className="text-[11px] text-muted-foreground">
-                    Interactive Walkthrough & Feature Map
+                    FAQ Cheat Sheet & Quick Navigation
                   </p>
                 </div>
               </div>
 
-              {/* Close Button */}
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => setIsHubOpen(false)}
                 className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                aria-label="Close guide"
+                aria-label="Close guide hub"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Mode Switcher Tabs */}
-            <div className="grid grid-cols-3 gap-1 p-2 bg-muted/20 border-b text-xs font-semibold">
+            {/* Quick Mode Switcher */}
+            <div className="grid grid-cols-2 gap-1 p-2 bg-muted/20 border-b text-xs font-semibold">
               <button
-                onClick={() => setActiveTab("tour")}
+                onClick={() => setHubTab("cheatsheet")}
                 className={`py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 transition-all ${
-                  activeTab === "tour"
-                    ? "bg-primary text-white shadow-xs"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Interactive Tour</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab("cheatsheet")}
-                className={`py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 transition-all ${
-                  activeTab === "cheatsheet"
+                  hubTab === "cheatsheet"
                     ? "bg-primary text-white shadow-xs"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 }`}
               >
                 <BookOpen className="w-3.5 h-3.5" />
-                <span>Cheat Sheet</span>
+                <span>Cheat Sheet & FAQ</span>
               </button>
 
               <button
-                onClick={() => setActiveTab("navigate")}
+                onClick={() => setHubTab("navigate")}
                 className={`py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 transition-all ${
-                  activeTab === "navigate"
+                  hubTab === "navigate"
                     ? "bg-primary text-white shadow-xs"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 }`}
               >
                 <MapPin className="w-3.5 h-3.5" />
-                <span>App Map</span>
+                <span>App Feature Map</span>
               </button>
             </div>
 
-            {/* Modal Body */}
+            {/* Body */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4 no-scrollbar">
-              {/* TAB 1: STEP-BY-STEP INTERACTIVE TOUR */}
-              {activeTab === "tour" && (
-                <div className="space-y-4">
-                  {/* Step Progress & Tag */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                        {currentStep.tag}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Step {currentStepIndex + 1} of {TOUR_STEPS.length}
-                      </span>
-                    </div>
-
-                    {/* Step Dots */}
-                    <div className="flex items-center space-x-1">
-                      {TOUR_STEPS.map((step, idx) => (
-                        <button
-                          key={step.id}
-                          onClick={() => handleJumpToStep(idx)}
-                          className={`h-1.5 rounded-full transition-all ${
-                            idx === currentStepIndex
-                              ? "w-5 bg-primary"
-                              : idx < currentStepIndex
-                              ? "w-2 bg-primary/40"
-                              : "w-1.5 bg-muted-foreground/30"
-                          }`}
-                          aria-label={`Jump to step ${idx + 1}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Main Step Card */}
-                  <div className="bg-gradient-to-br from-indigo-500/10 via-teal-500/5 to-transparent border border-indigo-500/20 rounded-3xl p-5 space-y-3 relative overflow-hidden">
-                    <div className="flex items-start space-x-3.5">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-teal-400 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
-                        {React.createElement(currentStep.icon, { className: "w-6 h-6" })}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-base text-foreground leading-tight">
-                          {currentStep.title}
-                        </h4>
-                        <p className="text-xs font-semibold text-primary mt-0.5">
-                          {currentStep.subtitle}
-                        </p>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {currentStep.description}
-                    </p>
-
-                    {/* Key Highlights */}
-                    <div className="space-y-1.5 pt-1">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Key Capabilities:
-                      </p>
-                      {currentStep.highlights.map((h, i) => (
-                        <div key={i} className="flex items-start space-x-2 text-xs">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 shrink-0 mt-0.5" />
-                          <span className="text-foreground/90">{h}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Pro Tip */}
-                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex items-start space-x-2.5">
-                      <Flame className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
-                        {currentStep.tips}
-                      </p>
-                    </div>
-
-                    {/* Live Screen Route Status */}
-                    <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground border-t border-border/50">
-                      <span>Currently viewing screen:</span>
-                      <button
-                        onClick={() => {
-                          if (pathname !== currentStep.route) {
-                            router.push(currentStep.route);
-                          }
-                        }}
-                        className="font-mono text-primary font-bold hover:underline flex items-center space-x-1"
-                      >
-                        <span>{currentStep.route}</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 2: CHEAT SHEET & FAQ HUB */}
-              {activeTab === "cheatsheet" && (
-                <div className="space-y-4">
-                  {/* Search Bar */}
+              {/* TAB 1: FAQ CHEAT SHEET */}
+              {hubTab === "cheatsheet" && (
+                <div className="space-y-3">
                   <div className="relative">
                     <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
@@ -555,7 +757,6 @@ export function FloatingGuideTour() {
                     />
                   </div>
 
-                  {/* FAQ Accordion List */}
                   <div className="space-y-2">
                     {filteredFaqs.map((faq, index) => {
                       const isExpanded = expandedFaqIndex === index;
@@ -589,21 +790,15 @@ export function FloatingGuideTour() {
                         </div>
                       );
                     })}
-
-                    {filteredFaqs.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground text-xs">
-                        No matches found. Try searching for &quot;split&quot; or &quot;budget&quot;.
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
 
-              {/* TAB 3: APP MAP & QUICK JUMP */}
-              {activeTab === "navigate" && (
+              {/* TAB 2: APP MAP & QUICK JUMP */}
+              {hubTab === "navigate" && (
                 <div className="space-y-3">
                   <p className="text-xs text-muted-foreground">
-                    Tap any screen below to navigate immediately and view its features:
+                    Jump directly to any module in Babi-Savings:
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -651,7 +846,7 @@ export function FloatingGuideTour() {
                           key={dest.route}
                           onClick={() => {
                             router.push(dest.route);
-                            setIsOpen(false);
+                            setIsHubOpen(false);
                           }}
                           className={`p-3.5 rounded-2xl border text-left flex items-start space-x-3 transition-all hover:scale-[1.02] active:scale-95 ${
                             isCurrent
@@ -685,63 +880,22 @@ export function FloatingGuideTour() {
               )}
             </div>
 
-            {/* Modal Footer Controls */}
+            {/* Footer */}
             <div className="p-4 border-t bg-muted/30 flex items-center justify-between">
-              {activeTab === "tour" ? (
-                <>
-                  <button
-                    onClick={() => {
-                      localStorage.setItem("babi_savings_tour_completed", "true");
-                      setIsOpen(false);
-                    }}
-                    className="text-xs text-muted-foreground hover:text-foreground font-semibold px-2 py-1"
-                  >
-                    Skip Tour
-                  </button>
+              <button
+                onClick={handleStartTour}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-teal-500 text-white shadow-md shadow-indigo-500/25 hover:scale-105 active:scale-95 transition-all flex items-center space-x-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Start Interactive Spotlight Tour</span>
+              </button>
 
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={handlePrevStep}
-                      disabled={currentStepIndex === 0}
-                      className="px-3 py-2 rounded-xl text-xs font-semibold bg-secondary text-foreground hover:bg-secondary/80 disabled:opacity-40 disabled:pointer-events-none transition-colors flex items-center space-x-1"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                      <span>Back</span>
-                    </button>
-
-                    <button
-                      onClick={handleNextStep}
-                      className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-teal-500 text-white shadow-md shadow-indigo-500/25 hover:scale-105 active:scale-95 transition-all flex items-center space-x-1.5"
-                    >
-                      <span>
-                        {currentStepIndex === TOUR_STEPS.length - 1
-                          ? "Complete Tour 🎉"
-                          : "Next Step"}
-                      </span>
-                      {currentStepIndex < TOUR_STEPS.length - 1 && (
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="w-full flex items-center justify-between">
-                  <button
-                    onClick={handleStartTour}
-                    className="text-xs text-primary hover:underline font-semibold flex items-center space-x-1"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Start Step-by-Step Tour</span>
-                  </button>
-
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-white hover:bg-primary/90 transition-colors"
-                  >
-                    Got It
-                  </button>
-                </div>
-              )}
+              <button
+                onClick={() => setIsHubOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-secondary text-foreground hover:bg-secondary/80 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

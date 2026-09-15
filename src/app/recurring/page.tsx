@@ -77,7 +77,7 @@ export default function RecurringPage() {
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
       {/* Header Summary */}
-      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-5 text-white border border-indigo-500/20 shadow-xl">
+      <div data-tour="recurring-hero" className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-5 text-white border border-indigo-500/20 shadow-xl">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
             <Calendar className="w-5 h-5 text-indigo-400" />

@@ -46,7 +46,7 @@ export function DebtSettlementCard() {
   };
 
   return (
-    <div className="bg-card border rounded-2xl p-4 shadow-xs">
+    <div data-tour="debt-settlement" className="bg-card border rounded-2xl p-4 shadow-xs">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
           <div className="w-7 h-7 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center">
