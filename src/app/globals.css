@@ -61,181 +61,199 @@
   /* OLED Black Canvas */
   [data-bg="oled"].dark {
     --background: #000000;
-    --card: #0c0c0e;
-    --popover: #0c0c0e;
-    --secondary: #17171a;
-    --muted: #17171a;
-    --border: #222227;
-    --input: #222227;
+    --card: #09090b;
+    --card-foreground: #fafafa;
+    --popover: #09090b;
+    --secondary: #18181b;
+    --muted: #18181b;
+    --border: #27272a;
+    --input: #27272a;
   }
   [data-bg="oled"]:not(.dark) {
     --background: #ffffff;
-    --card: #f9fafb;
-    --popover: #f9fafb;
-    --secondary: #f3f4f6;
-    --muted: #f3f4f6;
-    --border: #e5e7eb;
-    --input: #e5e7eb;
+    --card: #ffffff;
+    --card-foreground: #09090b;
+    --popover: #ffffff;
+    --secondary: #f4f4f5;
+    --muted: #f4f4f5;
+    --border: #e4e4e7;
+    --input: #e4e4e7;
   }
 
   /* Midnight Navy Canvas */
   [data-bg="midnight"].dark {
-    --background: #060d1d;
-    --card: #0d172c;
-    --popover: #0d172c;
-    --secondary: #15223e;
-    --muted: #15223e;
-    --border: #1d3056;
-    --input: #1d3056;
+    --background: #040914;
+    --card: #081124;
+    --card-foreground: #f0f6fc;
+    --popover: #081124;
+    --secondary: #0f1e3d;
+    --muted: #0f1e3d;
+    --border: #182d57;
+    --input: #182d57;
   }
   [data-bg="midnight"]:not(.dark) {
-    --background: #f0f4f9;
+    --background: #f0f5fc;
     --card: #ffffff;
+    --card-foreground: #0a1931;
     --popover: #ffffff;
-    --secondary: #e2eaf4;
-    --muted: #e2eaf4;
-    --border: #cad7e7;
-    --input: #cad7e7;
+    --secondary: #e2edfa;
+    --muted: #e2edfa;
+    --border: #c8dcf4;
+    --input: #c8dcf4;
   }
 
   /* Warm Espresso / Cream Canvas */
   [data-bg="warm"].dark {
-    --background: #14120e;
-    --card: #1d1914;
-    --popover: #1d1914;
-    --secondary: #2c251e;
-    --muted: #2c251e;
-    --border: #3d342a;
-    --input: #3d342a;
+    --background: #110d0a;
+    --card: #1a1410;
+    --card-foreground: #faf4ed;
+    --popover: #1a1410;
+    --secondary: #281f19;
+    --muted: #281f19;
+    --border: #382d24;
+    --input: #382d24;
   }
   [data-bg="warm"]:not(.dark) {
-    --background: #faf7f2;
+    --background: #faf6f0;
     --card: #ffffff;
+    --card-foreground: #1c150f;
     --popover: #ffffff;
-    --secondary: #f2ece1;
-    --muted: #f2ece1;
-    --border: #e4d8c5;
-    --input: #e4d8c5;
+    --secondary: #f2ebd9;
+    --muted: #f2ebd9;
+    --border: #e6dac6;
+    --input: #e6dac6;
   }
 
-  /* Pink / Rose Canvas */
+  /* Pink / Blossom Canvas */
   [data-bg="pink"].dark {
-    --background: #180a13;
-    --card: #24111d;
-    --popover: #24111d;
-    --secondary: #3b192e;
-    --muted: #3b192e;
-    --border: #4d233d;
-    --input: #4d233d;
+    --background: #12060e;
+    --card: #1c0b16;
+    --card-foreground: #fdf2f8;
+    --popover: #1c0b16;
+    --secondary: #2d1223;
+    --muted: #2d1223;
+    --border: #421b35;
+    --input: #421b35;
   }
   [data-bg="pink"]:not(.dark) {
-    --background: #fdf2f8;
+    --background: #fdf4f8;
     --card: #ffffff;
+    --card-foreground: #1a0513;
     --popover: #ffffff;
-    --secondary: #fce7f3;
-    --muted: #fce7f3;
-    --border: #fbcfe8;
-    --input: #fbcfe8;
+    --secondary: #fbe6f2;
+    --muted: #fbe6f2;
+    --border: #f8cde3;
+    --input: #f8cde3;
   }
 
-  /* Sky Blue Canvas */
+  /* Sky & Ocean Canvas */
   [data-bg="blue"].dark {
-    --background: #081220;
-    --card: #0f1d33;
-    --popover: #0f1d33;
-    --secondary: #172a4a;
-    --muted: #172a4a;
-    --border: #233e6b;
-    --input: #233e6b;
+    --background: #050d18;
+    --card: #0a172a;
+    --card-foreground: #f0f9ff;
+    --popover: #0a172a;
+    --secondary: #112542;
+    --muted: #112542;
+    --border: #1a3760;
+    --input: #1a3760;
   }
   [data-bg="blue"]:not(.dark) {
-    --background: #f0f9ff;
+    --background: #f0f8ff;
     --card: #ffffff;
+    --card-foreground: #081d36;
     --popover: #ffffff;
-    --secondary: #e0f2fe;
-    --muted: #e0f2fe;
-    --border: #bae6fd;
-    --input: #bae6fd;
+    --secondary: #dff0fe;
+    --muted: #dff0fe;
+    --border: #bce1fd;
+    --input: #bce1fd;
   }
 
   /* Sunny Yellow / Butter Canvas */
   [data-bg="yellow"].dark {
-    --background: #191608;
-    --card: #26210d;
-    --popover: #26210d;
-    --secondary: #3b3314;
-    --muted: #3b3314;
-    --border: #52471d;
-    --input: #52471d;
+    --background: #120f04;
+    --card: #1d1808;
+    --card-foreground: #fefce8;
+    --popover: #1d1808;
+    --secondary: #2d260e;
+    --muted: #2d260e;
+    --border: #433917;
+    --input: #433917;
   }
   [data-bg="yellow"]:not(.dark) {
-    --background: #fefce8;
+    --background: #fefcf0;
     --card: #ffffff;
+    --card-foreground: #1c1602;
     --popover: #ffffff;
-    --secondary: #fef9c3;
-    --muted: #fef9c3;
-    --border: #fef08a;
-    --input: #fef08a;
+    --secondary: #fef7cb;
+    --muted: #fef7cb;
+    --border: #fdee95;
+    --input: #fdee95;
   }
 
   /* Purple / Lavender Canvas */
   [data-bg="purple"].dark {
-    --background: #120921;
-    --card: #1c1033;
-    --popover: #1c1033;
-    --secondary: #2c194f;
-    --muted: #2c194f;
-    --border: #412473;
-    --input: #412473;
+    --background: #0c0517;
+    --card: #150a26;
+    --card-foreground: #faf5ff;
+    --popover: #150a26;
+    --secondary: #23113d;
+    --muted: #23113d;
+    --border: #351b59;
+    --input: #351b59;
   }
   [data-bg="purple"]:not(.dark) {
-    --background: #faf5ff;
+    --background: #fbf7ff;
     --card: #ffffff;
+    --card-foreground: #140526;
     --popover: #ffffff;
-    --secondary: #f3e8ff;
-    --muted: #f3e8ff;
-    --border: #e9d5ff;
-    --input: #e9d5ff;
+    --secondary: #f3e6ff;
+    --muted: #f3e6ff;
+    --border: #e6ccff;
+    --input: #e6ccff;
   }
 
   /* Coral / Peach Sunset Canvas */
   [data-bg="coral"].dark {
-    --background: #1a0d08;
-    --card: #27140e;
-    --popover: #27140e;
-    --secondary: #3d2016;
-    --muted: #3d2016;
-    --border: #562e1f;
-    --input: #562e1f;
+    --background: #140804;
+    --card: #200f08;
+    --card-foreground: #fff7ed;
+    --popover: #200f08;
+    --secondary: #31180e;
+    --muted: #31180e;
+    --border: #472416;
+    --input: #472416;
   }
   [data-bg="coral"]:not(.dark) {
-    --background: #fff7ed;
+    --background: #fff8f3;
     --card: #ffffff;
+    --card-foreground: #1f0a04;
     --popover: #ffffff;
-    --secondary: #ffedd5;
-    --muted: #ffedd5;
-    --border: #fed7aa;
-    --input: #fed7aa;
+    --secondary: #ffebd9;
+    --muted: #ffebd9;
+    --border: #fed5b5;
+    --input: #fed5b5;
   }
 
   /* Forest Mist Canvas */
   [data-bg="forest"].dark {
-    --background: #08140f;
-    --card: #0e2019;
-    --popover: #0e2019;
-    --secondary: #163026;
-    --muted: #163026;
-    --border: #204537;
-    --input: #204537;
+    --background: #050e09;
+    --card: #0a1910;
+    --card-foreground: #f2fbf6;
+    --popover: #0a1910;
+    --secondary: #11281b;
+    --muted: #11281b;
+    --border: #1a3d2b;
+    --input: #1a3d2b;
   }
   [data-bg="forest"]:not(.dark) {
-    --background: #f2f8f5;
+    --background: #f1fbf5;
     --card: #ffffff;
+    --card-foreground: #051a0e;
     --popover: #ffffff;
-    --secondary: #e2f0ea;
-    --muted: #e2f0ea;
-    --border: #c8e2d6;
-    --input: #c8e2d6;
+    --secondary: #daf4e4;
+    --muted: #daf4e4;
+    --border: #b3e7c8;
+    --input: #b3e7c8;
   }
 }
 
