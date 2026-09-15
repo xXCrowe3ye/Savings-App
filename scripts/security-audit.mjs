@@ -18,7 +18,7 @@ import http from "http";
 import https from "https";
 import { execSync } from "child_process";
 
-const BASE_URL = process.env.TEST_TARGET_URL || "http://localhost:3000";
+const BASE_URL = process.env.TEST_TARGET_URL || "https://babi-savingsapp.vercel.app/";
 
 const colors = {
   reset: "\x1b[0m",
