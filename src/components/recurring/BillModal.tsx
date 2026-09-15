@@ -44,9 +44,14 @@ const QUICK_PRESETS = [
 ];
 
 export function BillModal({ isOpen, onClose, billToEdit }: BillModalProps) {
-  const { currency, currentUser, partnerAName, partnerBName, refreshData, triggerConfetti } = useApp();
+  const { currency, currentUser, partnerAName, partnerBName, budgets, refreshData, triggerConfetti } = useApp();
 
   const isEditing = Boolean(billToEdit);
+
+  const availableCategories = React.useMemo(() => {
+    const budgetCats = (budgets || []).map((b) => b.category).filter(Boolean);
+    return Array.from(new Set([...budgetCats, ...CATEGORIES]));
+  }, [budgets]);
 
   // Form states
   const [title, setTitle] = useState("");
@@ -324,7 +329,7 @@ export function BillModal({ isOpen, onClose, billToEdit }: BillModalProps) {
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full px-3 py-2.5 text-xs bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/40 font-medium"
               >
-                {CATEGORIES.map((cat) => (
+                {availableCategories.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
                   </option>

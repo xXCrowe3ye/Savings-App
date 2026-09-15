@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import { CURRENCIES, formatMoney, parseNaturalLanguageEntry, calculateRoundUp } from "@/lib/utils";
 import { PartnerKey, SplitRatio, TransactionType } from "@/types";
@@ -14,6 +14,7 @@ import {
   Coins,
   ArrowDownCircle,
   Loader2,
+  Plus,
 } from "lucide-react";
 
 interface RapidLogModalProps {
@@ -21,7 +22,7 @@ interface RapidLogModalProps {
   onClose: () => void;
 }
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   "Groceries",
   "Food & Dining",
   "Housing",
@@ -33,7 +34,15 @@ const CATEGORIES = [
 ];
 
 export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
-  const { currentUser, currency, logTransaction, goals, partnerAName, partnerBName } = useApp();
+  const {
+    currentUser,
+    currency,
+    logTransaction,
+    goals,
+    budgets,
+    partnerAName,
+    partnerBName,
+  } = useApp();
 
   // Mode: Expense vs Savings
   const [entryType, setEntryType] = useState<TransactionType>("expense");
@@ -41,10 +50,18 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
   // Natural language entry state
   const [nlInput, setNlInput] = useState("");
 
+  // Dynamically merge user-defined budget categories with default categories
+  const availableCategories = useMemo(() => {
+    const budgetCats = (budgets || []).map((b) => b.category).filter(Boolean);
+    return Array.from(new Set([...budgetCats, ...DEFAULT_CATEGORIES]));
+  }, [budgets]);
+
   // Form states
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Groceries");
+  const [category, setCategory] = useState(availableCategories[0] || "Groceries");
+  const [isAddingCustomCategory, setIsAddingCustomCategory] = useState(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState("");
   const [selectedGoalId, setSelectedGoalId] = useState<string>("general");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [paidBy, setPaidBy] = useState<PartnerKey>(currentUser.partnerKey);
@@ -82,6 +99,15 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
     }
     if (parsed.date) {
       setDate(parsed.date);
+    }
+  };
+
+  const handleAddCustomCategory = () => {
+    const trimmed = customCategoryInput.trim();
+    if (trimmed) {
+      setCategory(trimmed);
+      setCustomCategoryInput("");
+      setIsAddingCustomCategory(false);
     }
   };
 
@@ -164,37 +190,37 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground"
+            className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Mode Selector: Expense vs Savings */}
-        <div className="mt-4 grid grid-cols-2 p-1 rounded-2xl bg-secondary/70 border">
+        {/* Mode Selector: Log Expense vs Add to Savings */}
+        <div className="mt-4 grid grid-cols-2 p-1.5 rounded-2xl bg-secondary/80 border gap-1.5">
           <button
             type="button"
             onClick={() => setEntryType("expense")}
-            className={`py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
+            className={`py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
               entryType === "expense"
-                ? "bg-card text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-gradient-to-r from-rose-500 to-indigo-600 text-white shadow-md shadow-rose-500/25 ring-2 ring-rose-500/30 scale-[1.02]"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/50 font-semibold"
             }`}
           >
-            <ArrowDownCircle className="w-3.5 h-3.5 text-rose-500" />
+            <ArrowDownCircle className={`w-4 h-4 ${entryType === "expense" ? "text-white" : "text-rose-500"}`} />
             <span>Log Expense</span>
           </button>
 
           <button
             type="button"
             onClick={() => setEntryType("savings")}
-            className={`py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
+            className={`py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
               entryType === "savings"
-                ? "bg-card text-emerald-600 dark:text-emerald-400 shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-gradient-to-r from-teal-600 to-emerald-500 text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/30 scale-[1.02]"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/50 font-semibold"
             }`}
           >
-            <PiggyBank className="w-3.5 h-3.5 text-emerald-500" />
+            <PiggyBank className={`w-4 h-4 ${entryType === "savings" ? "text-white" : "text-emerald-500"}`} />
             <span>Add to Savings</span>
           </button>
         </div>
@@ -204,7 +230,7 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
           <div className="mt-3 p-2.5 rounded-2xl bg-secondary/50 border border-border/80">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] font-semibold text-primary flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Natural Language AI Assistant
+                <Sparkles className="w-3 h-3" /> Natural Language Assistant
               </span>
               <span className="text-[10px] text-muted-foreground">e.g. &quot;35 dinner&quot;</span>
             </div>
@@ -263,7 +289,7 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
                   onClick={() => setAmount(quick.toString())}
                   className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all ${
                     amount === quick.toString()
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/40"
                       : "bg-secondary/40 border-border hover:bg-secondary text-foreground"
                   }`}
                 >
@@ -324,26 +350,88 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
                 />
               </div>
 
-              {/* Category Chips */}
+              {/* Category Chips with Dynamic Budget Integration */}
               <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
-                  Category
-                </label>
-                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto no-scrollbar">
-                  {CATEGORIES.map((cat) => (
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground block">
+                    Category
+                  </label>
+                  {!isAddingCustomCategory && (
                     <button
                       type="button"
-                      key={cat}
-                      onClick={() => setCategory(cat)}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
-                        category === cat
-                          ? "bg-primary text-white border-primary shadow-xs"
-                          : "bg-secondary/40 border-border hover:bg-secondary text-foreground"
-                      }`}
+                      onClick={() => setIsAddingCustomCategory(true)}
+                      className="text-[11px] text-primary hover:underline font-semibold flex items-center space-x-0.5"
                     >
-                      {cat}
+                      <Plus className="w-3 h-3" />
+                      <span>New Category</span>
                     </button>
-                  ))}
+                  )}
+                </div>
+
+                {/* Custom Category Quick Adder */}
+                {isAddingCustomCategory && (
+                  <div className="flex items-center space-x-1.5 mb-2 animate-in fade-in duration-150">
+                    <input
+                      type="text"
+                      placeholder="Category name (e.g. Pet Care)..."
+                      value={customCategoryInput}
+                      onChange={(e) => setCustomCategoryInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddCustomCategory();
+                        }
+                      }}
+                      className="flex-1 text-xs bg-background border rounded-xl px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomCategory}
+                      className="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-primary text-white hover:bg-primary/90"
+                    >
+                      Add
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCustomCategory(false)}
+                      className="p-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto no-scrollbar p-1">
+                  {/* If custom category selected that is not in list, render it too */}
+                  {category && !availableCategories.includes(category) && (
+                    <button
+                      type="button"
+                      onClick={() => setCategory(category)}
+                      className="text-xs px-3 py-1.5 rounded-full border transition-all bg-gradient-to-r from-indigo-600 to-teal-500 text-white border-indigo-500 font-bold shadow-md shadow-indigo-500/25 ring-2 ring-indigo-500/40 scale-105 flex items-center space-x-1"
+                    >
+                      <span>{category}</span>
+                      <Check className="w-3 h-3" />
+                    </button>
+                  )}
+
+                  {availableCategories.map((cat) => {
+                    const isSelected = category === cat;
+                    return (
+                      <button
+                        type="button"
+                        key={cat}
+                        onClick={() => setCategory(cat)}
+                        className={`text-xs px-3 py-1.5 rounded-full border transition-all flex items-center space-x-1 ${
+                          isSelected
+                            ? "bg-gradient-to-r from-indigo-600 to-teal-500 text-white border-indigo-500 font-bold shadow-md shadow-indigo-500/25 ring-2 ring-indigo-500/40 scale-105"
+                            : "bg-secondary/60 border-border/80 hover:bg-secondary text-muted-foreground hover:text-foreground font-medium"
+                        }`}
+                      >
+                        <span>{cat}</span>
+                        {isSelected && <Check className="w-3 h-3" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </>
@@ -364,8 +452,8 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
                   }}
                   className={`py-2 px-2 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1 ${
                     paidBy === "partner_a" && splitRatio === "100/0"
-                      ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                      : "bg-background border-border hover:bg-secondary"
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/30 ring-2 ring-indigo-500/40 font-bold scale-[1.02]"
+                      : "bg-secondary/50 border-border hover:bg-secondary text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <span>{partnerAName}</span>
@@ -380,8 +468,8 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
                   }}
                   className={`py-2 px-2 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1 ${
                     paidBy === "partner_b" && splitRatio === "0/100"
-                      ? "bg-teal-600 text-white border-teal-600 shadow-sm"
-                      : "bg-background border-border hover:bg-secondary"
+                      ? "bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-600/30 ring-2 ring-teal-500/40 font-bold scale-[1.02]"
+                      : "bg-secondary/50 border-border hover:bg-secondary text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <span>{partnerBName}</span>
@@ -396,8 +484,8 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
                   }}
                   className={`py-2 px-2 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1 ${
                     splitRatio === "50/50"
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                      : "bg-background border-border hover:bg-secondary"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/30 ring-2 ring-emerald-500/40 font-bold scale-[1.02]"
+                      : "bg-secondary/50 border-border hover:bg-secondary text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <span>Joint (50/50)</span>
@@ -409,10 +497,10 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
                 <button
                   type="button"
                   onClick={() => setPaidBy("partner_a")}
-                  className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  className={`py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
                     paidBy === "partner_a"
-                      ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                      : "bg-background border-border hover:bg-secondary"
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/30 ring-2 ring-indigo-500/40 font-bold scale-[1.02]"
+                      : "bg-secondary/50 border-border hover:bg-secondary text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <span>{partnerAName}</span>
@@ -421,10 +509,10 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
                 <button
                   type="button"
                   onClick={() => setPaidBy("partner_b")}
-                  className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  className={`py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
                     paidBy === "partner_b"
-                      ? "bg-teal-600 text-white border-teal-600 shadow-sm"
-                      : "bg-background border-border hover:bg-secondary"
+                      ? "bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-600/30 ring-2 ring-teal-500/40 font-bold scale-[1.02]"
+                      : "bg-secondary/50 border-border hover:bg-secondary text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <span>{partnerBName}</span>
@@ -440,21 +528,24 @@ export function RapidLogModal({ isOpen, onClose }: RapidLogModalProps) {
               <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
                 Expense Split Ratio
               </label>
-              <div className="grid grid-cols-5 gap-1">
-                {(["50/50", "60/40", "70/30", "100/0", "0/100"] as SplitRatio[]).map((ratio) => (
-                  <button
-                    type="button"
-                    key={ratio}
-                    onClick={() => setSplitRatio(ratio)}
-                    className={`py-1.5 text-[11px] font-medium rounded-lg border transition-all ${
-                      splitRatio === ratio
-                        ? "bg-foreground text-background border-foreground font-bold shadow-xs"
-                        : "bg-secondary/40 border-border hover:bg-secondary text-foreground"
-                    }`}
-                  >
-                    {ratio}
-                  </button>
-                ))}
+              <div className="grid grid-cols-5 gap-1.5">
+                {(["50/50", "60/40", "70/30", "100/0", "0/100"] as SplitRatio[]).map((ratio) => {
+                  const isSelected = splitRatio === ratio;
+                  return (
+                    <button
+                      type="button"
+                      key={ratio}
+                      onClick={() => setSplitRatio(ratio)}
+                      className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                        isSelected
+                          ? "bg-gradient-to-r from-indigo-600 to-teal-500 text-white border-indigo-500 shadow-md shadow-indigo-500/25 ring-2 ring-indigo-500/40 scale-105"
+                          : "bg-secondary/50 border-border hover:bg-secondary text-muted-foreground hover:text-foreground font-semibold"
+                      }`}
+                    >
+                      {ratio}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
