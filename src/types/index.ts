@@ -10,7 +10,18 @@ export type CurrencyCode = "USD" | "EUR" | "GBP" | "PHP" | "JPY";
 
 export type ThemeMode = "dark" | "light" | "system";
 
-export type BackgroundTheme = "default" | "oled" | "midnight" | "warm" | "forest";
+export type BackgroundTheme =
+  | "default"
+  | "oled"
+  | "pink"
+  | "blue"
+  | "yellow"
+  | "purple"
+  | "coral"
+  | "midnight"
+  | "warm"
+  | "forest"
+  | "custom";
 
 export type TransactionType = "expense" | "savings" | "income" | "settlement";
 

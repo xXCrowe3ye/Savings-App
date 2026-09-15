@@ -24,11 +24,16 @@ const THEME_ACCENTS = [
 ];
 
 const BACKGROUND_THEMES: { id: BackgroundTheme; name: string; desc: string; darkBg: string; lightBg: string }[] = [
-  { id: "default", name: "Default Slate", desc: "Modern balanced dark slate", darkBg: "#090d16", lightBg: "#f8fafc" },
-  { id: "oled", name: "OLED Black", desc: "Pitch black for OLED displays", darkBg: "#000000", lightBg: "#ffffff" },
-  { id: "midnight", name: "Midnight Navy", desc: "Deep oceanic blue tint", darkBg: "#060d1d", lightBg: "#f0f4f9" },
-  { id: "warm", name: "Warm Espresso", desc: "Cozy coffee & warm cream", darkBg: "#14120e", lightBg: "#faf7f2" },
-  { id: "forest", name: "Deep Forest", desc: "Rich pine & mint backdrop", darkBg: "#08140f", lightBg: "#f2f8f5" },
+  { id: "default", name: "Default Slate", desc: "Balanced dark slate & crisp light zinc", darkBg: "#090d16", lightBg: "#f8fafc" },
+  { id: "pink", name: "Pink Blossom", desc: "Rose velvet dark & soft blush pink light", darkBg: "#180a13", lightBg: "#fdf2f8" },
+  { id: "blue", name: "Sky & Ocean", desc: "Deep sapphire dark & fresh sky blue light", darkBg: "#081220", lightBg: "#f0f9ff" },
+  { id: "yellow", name: "Sunny Butter", desc: "Golden charcoal dark & warm yellow light", darkBg: "#191608", lightBg: "#fefce8" },
+  { id: "purple", name: "Lavender Glow", desc: "Royal violet dark & dreamy pastel purple", darkBg: "#120921", lightBg: "#faf5ff" },
+  { id: "coral", name: "Sunset Peach", desc: "Warm ember dark & soft coral peach light", darkBg: "#1a0d08", lightBg: "#fff7ed" },
+  { id: "forest", name: "Mint Forest", desc: "Rich pine dark & fresh mint ice light", darkBg: "#08140f", lightBg: "#f2f8f5" },
+  { id: "midnight", name: "Midnight Navy", desc: "Deep oceanic blue dark & pastel ice light", darkBg: "#060d1d", lightBg: "#f0f4f9" },
+  { id: "warm", name: "Warm Espresso", desc: "Cozy coffee dark & warm cream paper", darkBg: "#14120e", lightBg: "#faf7f2" },
+  { id: "oled", name: "OLED Black", desc: "Pitch black for OLED & pure minimalist white", darkBg: "#000000", lightBg: "#ffffff" },
 ];
 
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
@@ -42,6 +47,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     setThemeAccent: setGlobalThemeAccent,
     backgroundTheme,
     setBackgroundTheme,
+    customBgColor,
+    setCustomBgColor,
   } = useApp();
 
   const [nickname, setNickname] = useState("");
@@ -305,11 +312,13 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <label className="text-xs font-semibold text-muted-foreground block mb-2 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <PaintBucket className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Background Canvas Style</span>
+                <span>Background Color & Canvas</span>
               </span>
-              <span className="text-[10px] text-muted-foreground">Adjusts dark & light tone</span>
+              <span className="text-[10px] text-muted-foreground">Pink, Blue, Yellow & Custom</span>
             </label>
-            <div className="grid grid-cols-1 gap-1.5">
+
+            {/* 2-Column Vibrant Theme Presets */}
+            <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1 no-scrollbar">
               {BACKGROUND_THEMES.map((bg) => (
                 <button
                   type="button"
@@ -317,12 +326,11 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   onClick={() => setBackgroundTheme(bg.id)}
                   className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
                     backgroundTheme === bg.id
-                      ? "border-primary bg-primary/5 ring-1 ring-primary/40 shadow-sm"
+                      ? "border-primary bg-primary/10 ring-2 ring-primary/40 shadow-sm"
                       : "hover:bg-secondary/60 opacity-80 hover:opacity-100"
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
-                    {/* Dark / Light swatch bubble */}
+                  <div className="flex items-center space-x-2.5 min-w-0">
                     <div className="flex -space-x-1 shrink-0">
                       <span
                         className="w-4 h-4 rounded-full border shadow-xs"
@@ -335,18 +343,57 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                         title="Light Tone"
                       />
                     </div>
-                    <div>
-                      <div className="text-xs font-bold">{bg.name}</div>
-                      <div className="text-[10px] text-muted-foreground">{bg.desc}</div>
+                    <div className="truncate">
+                      <div className="text-xs font-bold truncate">{bg.name}</div>
+                      <div className="text-[9px] text-muted-foreground truncate">{bg.desc.split("&")[0]}</div>
                     </div>
                   </div>
                   {backgroundTheme === bg.id && (
-                    <div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center shrink-0">
-                      <Check className="w-3 h-3" />
-                    </div>
+                    <Check className="w-3.5 h-3.5 text-primary shrink-0 ml-1" />
                   )}
                 </button>
               ))}
+            </div>
+
+            {/* Custom Background Color Picker */}
+            <div className="mt-2 p-2.5 rounded-xl border bg-secondary/30 flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="relative">
+                  <input
+                    type="color"
+                    value={customBgColor || "#1e1b4b"}
+                    onChange={(e) => {
+                      setCustomBgColor(e.target.value);
+                      setBackgroundTheme("custom");
+                    }}
+                    className="w-7 h-7 rounded-lg border cursor-pointer opacity-0 absolute inset-0"
+                    title="Choose any custom background color"
+                  />
+                  <div
+                    className="w-7 h-7 rounded-lg border shadow-sm flex items-center justify-center cursor-pointer pointer-events-none"
+                    style={{ backgroundColor: customBgColor || "#1e1b4b" }}
+                  >
+                    <Palette className="w-3.5 h-3.5 text-white drop-shadow" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-bold">Custom Canvas Color</div>
+                  <div className="text-[10px] text-muted-foreground font-mono">
+                    {customBgColor.toUpperCase()}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBackgroundTheme("custom")}
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                  backgroundTheme === "custom"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "bg-secondary hover:bg-secondary/80 text-foreground"
+                }`}
+              >
+                {backgroundTheme === "custom" ? "Active" : "Apply"}
+              </button>
             </div>
           </div>
 

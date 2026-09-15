@@ -34,6 +34,8 @@ interface AppContextType {
   setThemeAccent: (accentHex: string) => void;
   backgroundTheme: BackgroundTheme;
   setBackgroundTheme: (theme: BackgroundTheme) => void;
+  customBgColor: string;
+  setCustomBgColor: (hex: string) => void;
   transactions: Transaction[];
   budgets: CategoryBudget[];
   goals: SavingsGoal[];
@@ -116,6 +118,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>("dark");
   const [themeAccent, setThemeAccentState] = useState<string>("#6366f1");
   const [backgroundTheme, setBackgroundThemeState] = useState<BackgroundTheme>("default");
+  const [customBgColor, setCustomBgColorState] = useState<string>("#1e1b4b");
 
   // Dynamic WCAG luminance & contrast ratio calculation
   const getContrastForeground = (hex: string): string => {
@@ -164,23 +167,95 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setThemeMode(nextMode);
   };
 
-  // Apply Background Canvas Style (default / oled / midnight / warm / forest)
-  const applyBackgroundTheme = useCallback((bg: BackgroundTheme) => {
+  // Clear inline background overrides so presets and CSS classes apply cleanly
+  const clearCustomBackgroundStyles = useCallback(() => {
     if (typeof window === "undefined") return;
     const root = document.documentElement;
-    if (bg === "default") {
-      root.removeAttribute("data-bg");
-    } else {
-      root.setAttribute("data-bg", bg);
+    root.style.removeProperty("--background");
+    root.style.removeProperty("--foreground");
+    root.style.removeProperty("--card");
+    root.style.removeProperty("--card-foreground");
+    root.style.removeProperty("--secondary");
+    root.style.removeProperty("--muted");
+    root.style.removeProperty("--border");
+    root.style.removeProperty("--popover");
+  }, []);
+
+  // Apply a completely custom background color with automatic surface calculations
+  const applyCustomBackground = useCallback((hex: string) => {
+    if (typeof window === "undefined" || !hex) return;
+    const root = document.documentElement;
+    root.setAttribute("data-bg", "custom");
+    root.style.setProperty("--background", hex);
+
+    const cleanHex = hex.replace("#", "");
+    if (cleanHex.length === 6) {
+      const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
+      const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
+      const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
+      const [lumR, lumG, lumB] = [r, g, b].map((v) =>
+        v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+      );
+      const luminance = 0.2126 * lumR + 0.7152 * lumG + 0.0722 * lumB;
+      const isLightBg = luminance > 0.4;
+
+      if (isLightBg) {
+        root.style.setProperty("--foreground", "#0f172a");
+        root.style.setProperty("--card", "#ffffff");
+        root.style.setProperty("--card-foreground", "#0f172a");
+        root.style.setProperty("--secondary", "rgba(0,0,0,0.06)");
+        root.style.setProperty("--muted", "rgba(0,0,0,0.06)");
+        root.style.setProperty("--border", "rgba(0,0,0,0.12)");
+        root.style.setProperty("--popover", "#ffffff");
+      } else {
+        root.style.setProperty("--foreground", "#f8fafc");
+        root.style.setProperty("--card", "rgba(255,255,255,0.08)");
+        root.style.setProperty("--card-foreground", "#f8fafc");
+        root.style.setProperty("--secondary", "rgba(255,255,255,0.12)");
+        root.style.setProperty("--muted", "rgba(255,255,255,0.12)");
+        root.style.setProperty("--border", "rgba(255,255,255,0.18)");
+        root.style.setProperty("--popover", "#111827");
+      }
     }
   }, []);
+
+  // Apply Background Canvas Style (default / oled / pink / blue / yellow / purple / coral / midnight / warm / forest / custom)
+  const applyBackgroundTheme = useCallback(
+    (bg: BackgroundTheme, customHex?: string) => {
+      if (typeof window === "undefined") return;
+      const root = document.documentElement;
+
+      if (bg === "custom") {
+        const hexToApply = customHex || customBgColor || "#1e1b4b";
+        applyCustomBackground(hexToApply);
+      } else {
+        clearCustomBackgroundStyles();
+        if (bg === "default") {
+          root.removeAttribute("data-bg");
+        } else {
+          root.setAttribute("data-bg", bg);
+        }
+      }
+    },
+    [customBgColor, applyCustomBackground, clearCustomBackgroundStyles]
+  );
 
   const setBackgroundTheme = (bg: BackgroundTheme) => {
     setBackgroundThemeState(bg);
     if (typeof window !== "undefined") {
       localStorage.setItem(`babi_bg_theme_${currentUser.id}`, bg);
     }
-    applyBackgroundTheme(bg);
+    applyBackgroundTheme(bg, customBgColor);
+  };
+
+  const setCustomBgColor = (hex: string) => {
+    setCustomBgColorState(hex);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`babi_custom_bg_${currentUser.id}`, hex);
+    }
+    if (backgroundTheme === "custom") {
+      applyCustomBackground(hex);
+    }
   };
 
   // Apply Theme Accent to CSS Variables (--primary, --ring, --primary-foreground)
@@ -210,10 +285,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setThemeModeState(savedMode);
     applyThemeMode(savedMode);
 
+    // Load custom background color
+    const savedCustomBg =
+      localStorage.getItem(`babi_custom_bg_${currentUser.id}`) || "#1e1b4b";
+    setCustomBgColorState(savedCustomBg);
+
     // Load background canvas style per user
-    const savedBg = (localStorage.getItem(`babi_bg_theme_${currentUser.id}`) as BackgroundTheme) || "default";
+    const savedBg =
+      (localStorage.getItem(`babi_bg_theme_${currentUser.id}`) as BackgroundTheme) ||
+      "default";
     setBackgroundThemeState(savedBg);
-    applyBackgroundTheme(savedBg);
+    applyBackgroundTheme(savedBg, savedCustomBg);
 
     // Load theme accent per user
     const savedAccent =
@@ -233,7 +315,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     mediaQuery.addEventListener("change", handleSystemChange);
     return () => mediaQuery.removeEventListener("change", handleSystemChange);
-  }, [currentUser.id, currentUser.themeAccent, applyThemeMode, applyThemeAccent, applyBackgroundTheme]);
+  }, [
+    currentUser.id,
+    currentUser.themeAccent,
+    applyThemeMode,
+    applyThemeAccent,
+    applyBackgroundTheme,
+  ]);
 
   const setCurrency = (c: CurrencyCode) => {
     setCurrencyState(c);
@@ -662,6 +750,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setThemeAccent,
         backgroundTheme,
         setBackgroundTheme,
+        customBgColor,
+        setCustomBgColor,
         transactions,
         budgets,
         goals,
