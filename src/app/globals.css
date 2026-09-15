@@ -57,6 +57,86 @@
     --partner-b: #2dd4bf;
     --partner-b-light: #134e4a;
   }
+
+  /* OLED Black Canvas */
+  [data-bg="oled"].dark {
+    --background: #000000;
+    --card: #0c0c0e;
+    --popover: #0c0c0e;
+    --secondary: #17171a;
+    --muted: #17171a;
+    --border: #222227;
+    --input: #222227;
+  }
+  [data-bg="oled"]:not(.dark) {
+    --background: #ffffff;
+    --card: #f9fafb;
+    --popover: #f9fafb;
+    --secondary: #f3f4f6;
+    --muted: #f3f4f6;
+    --border: #e5e7eb;
+    --input: #e5e7eb;
+  }
+
+  /* Midnight Navy Canvas */
+  [data-bg="midnight"].dark {
+    --background: #060d1d;
+    --card: #0d172c;
+    --popover: #0d172c;
+    --secondary: #15223e;
+    --muted: #15223e;
+    --border: #1d3056;
+    --input: #1d3056;
+  }
+  [data-bg="midnight"]:not(.dark) {
+    --background: #f0f4f9;
+    --card: #ffffff;
+    --popover: #ffffff;
+    --secondary: #e2eaf4;
+    --muted: #e2eaf4;
+    --border: #cad7e7;
+    --input: #cad7e7;
+  }
+
+  /* Warm Espresso / Cream Canvas */
+  [data-bg="warm"].dark {
+    --background: #14120e;
+    --card: #1d1914;
+    --popover: #1d1914;
+    --secondary: #2c251e;
+    --muted: #2c251e;
+    --border: #3d342a;
+    --input: #3d342a;
+  }
+  [data-bg="warm"]:not(.dark) {
+    --background: #faf7f2;
+    --card: #ffffff;
+    --popover: #ffffff;
+    --secondary: #f2ece1;
+    --muted: #f2ece1;
+    --border: #e4d8c5;
+    --input: #e4d8c5;
+  }
+
+  /* Forest Mist Canvas */
+  [data-bg="forest"].dark {
+    --background: #08140f;
+    --card: #0e2019;
+    --popover: #0e2019;
+    --secondary: #163026;
+    --muted: #163026;
+    --border: #204537;
+    --input: #204537;
+  }
+  [data-bg="forest"]:not(.dark) {
+    --background: #f2f8f5;
+    --card: #ffffff;
+    --popover: #ffffff;
+    --secondary: #e2f0ea;
+    --muted: #e2f0ea;
+    --border: #c8e2d6;
+    --input: #c8e2d6;
+  }
 }
 
 body {

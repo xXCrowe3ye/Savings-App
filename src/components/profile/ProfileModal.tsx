@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
-import { X, Camera, Sparkles, Check, Palette, User, Loader2, Compass, Sun, Moon, Monitor } from "lucide-react";
-import { ThemeMode } from "@/types";
+import { X, Camera, Sparkles, Check, Palette, User, Loader2, Compass, Sun, Moon, Monitor, PaintBucket } from "lucide-react";
+import { ThemeMode, BackgroundTheme } from "@/types";
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -23,6 +23,14 @@ const THEME_ACCENTS = [
   { name: "Slate", hex: "#475569" },
 ];
 
+const BACKGROUND_THEMES: { id: BackgroundTheme; name: string; desc: string; darkBg: string; lightBg: string }[] = [
+  { id: "default", name: "Default Slate", desc: "Modern balanced dark slate", darkBg: "#090d16", lightBg: "#f8fafc" },
+  { id: "oled", name: "OLED Black", desc: "Pitch black for OLED displays", darkBg: "#000000", lightBg: "#ffffff" },
+  { id: "midnight", name: "Midnight Navy", desc: "Deep oceanic blue tint", darkBg: "#060d1d", lightBg: "#f0f4f9" },
+  { id: "warm", name: "Warm Espresso", desc: "Cozy coffee & warm cream", darkBg: "#14120e", lightBg: "#faf7f2" },
+  { id: "forest", name: "Deep Forest", desc: "Rich pine & mint backdrop", darkBg: "#08140f", lightBg: "#f2f8f5" },
+];
+
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const {
     currentUser,
@@ -30,7 +38,10 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     refreshData,
     themeMode,
     setThemeMode,
+    themeAccent: currentAccent,
     setThemeAccent: setGlobalThemeAccent,
+    backgroundTheme,
+    setBackgroundTheme,
   } = useApp();
 
   const [nickname, setNickname] = useState("");
@@ -283,6 +294,56 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 >
                   {themeAccent.toLowerCase() === color.hex.toLowerCase() && (
                     <Check className="w-4 h-4 text-white drop-shadow" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Background Canvas Style */}
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <PaintBucket className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Background Canvas Style</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground">Adjusts dark & light tone</span>
+            </label>
+            <div className="grid grid-cols-1 gap-1.5">
+              {BACKGROUND_THEMES.map((bg) => (
+                <button
+                  type="button"
+                  key={bg.id}
+                  onClick={() => setBackgroundTheme(bg.id)}
+                  className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
+                    backgroundTheme === bg.id
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/40 shadow-sm"
+                      : "hover:bg-secondary/60 opacity-80 hover:opacity-100"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    {/* Dark / Light swatch bubble */}
+                    <div className="flex -space-x-1 shrink-0">
+                      <span
+                        className="w-4 h-4 rounded-full border shadow-xs"
+                        style={{ backgroundColor: bg.darkBg }}
+                        title="Dark Tone"
+                      />
+                      <span
+                        className="w-4 h-4 rounded-full border shadow-xs"
+                        style={{ backgroundColor: bg.lightBg }}
+                        title="Light Tone"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold">{bg.name}</div>
+                      <div className="text-[10px] text-muted-foreground">{bg.desc}</div>
+                    </div>
+                  </div>
+                  {backgroundTheme === bg.id && (
+                    <div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3" />
+                    </div>
                   )}
                 </button>
               ))}

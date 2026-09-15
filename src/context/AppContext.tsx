@@ -12,6 +12,7 @@ import {
   CurrencyCode,
   PartnerKey,
   ThemeMode,
+  BackgroundTheme,
 } from "@/types";
 import { queueOfflineTransaction, syncOfflineTransactions, getQueuedTransactions } from "@/lib/pwa/offlineQueue";
 import { isSupabaseConfigured, getSupabaseClient } from "@/lib/supabase/client";
@@ -31,6 +32,8 @@ interface AppContextType {
   toggleThemeMode: () => void;
   themeAccent: string;
   setThemeAccent: (accentHex: string) => void;
+  backgroundTheme: BackgroundTheme;
+  setBackgroundTheme: (theme: BackgroundTheme) => void;
   transactions: Transaction[];
   budgets: CategoryBudget[];
   goals: SavingsGoal[];
@@ -112,6 +115,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [themeMode, setThemeModeState] = useState<ThemeMode>("dark");
   const [themeAccent, setThemeAccentState] = useState<string>("#6366f1");
+  const [backgroundTheme, setBackgroundThemeState] = useState<BackgroundTheme>("default");
+
+  // Dynamic WCAG luminance & contrast ratio calculation
+  const getContrastForeground = (hex: string): string => {
+    try {
+      const cleanHex = hex.replace("#", "");
+      if (cleanHex.length !== 6) return "#ffffff";
+      const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
+      const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
+      const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
+      const [lumR, lumG, lumB] = [r, g, b].map((v) =>
+        v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+      );
+      const luminance = 0.2126 * lumR + 0.7152 * lumG + 0.0722 * lumB;
+      // If color is bright/light (e.g. Amber, Mint, Pale Teal), use dark foreground text
+      return luminance > 0.45 ? "#090d16" : "#ffffff";
+    } catch {
+      return "#ffffff";
+    }
+  };
 
   // Apply Theme Mode (dark / light / system) to <html>
   const applyThemeMode = useCallback((mode: ThemeMode) => {
@@ -141,12 +164,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setThemeMode(nextMode);
   };
 
-  // Apply Theme Accent to CSS Variables (--primary, --ring)
+  // Apply Background Canvas Style (default / oled / midnight / warm / forest)
+  const applyBackgroundTheme = useCallback((bg: BackgroundTheme) => {
+    if (typeof window === "undefined") return;
+    const root = document.documentElement;
+    if (bg === "default") {
+      root.removeAttribute("data-bg");
+    } else {
+      root.setAttribute("data-bg", bg);
+    }
+  }, []);
+
+  const setBackgroundTheme = (bg: BackgroundTheme) => {
+    setBackgroundThemeState(bg);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`babi_bg_theme_${currentUser.id}`, bg);
+    }
+    applyBackgroundTheme(bg);
+  };
+
+  // Apply Theme Accent to CSS Variables (--primary, --ring, --primary-foreground)
   const applyThemeAccent = useCallback((hex: string) => {
     if (typeof window === "undefined" || !hex) return;
     const root = document.documentElement;
     root.style.setProperty("--primary", hex);
     root.style.setProperty("--ring", hex);
+    const contrastText = getContrastForeground(hex);
+    root.style.setProperty("--primary-foreground", contrastText);
   }, []);
 
   const setThemeAccent = (hex: string) => {
@@ -157,7 +201,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     applyThemeAccent(hex);
   };
 
-  // Initialize theme mode and accent from localStorage on mount & on user change
+  // Initialize theme mode, background, and accent from localStorage on mount & on user change
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -165,6 +209,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const savedMode = (localStorage.getItem("babi_theme_mode") as ThemeMode) || "dark";
     setThemeModeState(savedMode);
     applyThemeMode(savedMode);
+
+    // Load background canvas style per user
+    const savedBg = (localStorage.getItem(`babi_bg_theme_${currentUser.id}`) as BackgroundTheme) || "default";
+    setBackgroundThemeState(savedBg);
+    applyBackgroundTheme(savedBg);
 
     // Load theme accent per user
     const savedAccent =
@@ -184,7 +233,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     mediaQuery.addEventListener("change", handleSystemChange);
     return () => mediaQuery.removeEventListener("change", handleSystemChange);
-  }, [currentUser.id, currentUser.themeAccent, applyThemeMode, applyThemeAccent]);
+  }, [currentUser.id, currentUser.themeAccent, applyThemeMode, applyThemeAccent, applyBackgroundTheme]);
 
   const setCurrency = (c: CurrencyCode) => {
     setCurrencyState(c);
@@ -611,6 +660,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         toggleThemeMode,
         themeAccent,
         setThemeAccent,
+        backgroundTheme,
+        setBackgroundTheme,
         transactions,
         budgets,
         goals,
