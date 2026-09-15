@@ -11,6 +11,7 @@ import {
   UserProfile,
   CurrencyCode,
   PartnerKey,
+  ThemeMode,
 } from "@/types";
 import { queueOfflineTransaction, syncOfflineTransactions, getQueuedTransactions } from "@/lib/pwa/offlineQueue";
 import { isSupabaseConfigured, getSupabaseClient } from "@/lib/supabase/client";
@@ -25,6 +26,11 @@ interface AppContextType {
   isAuthenticated: boolean;
   currency: CurrencyCode;
   setCurrency: (currency: CurrencyCode) => void;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
+  toggleThemeMode: () => void;
+  themeAccent: string;
+  setThemeAccent: (accentHex: string) => void;
   transactions: Transaction[];
   budgets: CategoryBudget[];
   goals: SavingsGoal[];
@@ -103,6 +109,82 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (partnerKey === "shared" || partnerKey === "both") return "Shared (50/50)";
     return partnerKey === "partner_a" ? partnerAName : partnerBName;
   };
+
+  const [themeMode, setThemeModeState] = useState<ThemeMode>("dark");
+  const [themeAccent, setThemeAccentState] = useState<string>("#6366f1");
+
+  // Apply Theme Mode (dark / light / system) to <html>
+  const applyThemeMode = useCallback((mode: ThemeMode) => {
+    if (typeof window === "undefined") return;
+    const root = document.documentElement;
+    let isDark = mode === "dark";
+    if (mode === "system") {
+      isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+    if (isDark) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+  }, []);
+
+  const setThemeMode = (mode: ThemeMode) => {
+    setThemeModeState(mode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("babi_theme_mode", mode);
+    }
+    applyThemeMode(mode);
+  };
+
+  const toggleThemeMode = () => {
+    const nextMode: ThemeMode = themeMode === "dark" ? "light" : "dark";
+    setThemeMode(nextMode);
+  };
+
+  // Apply Theme Accent to CSS Variables (--primary, --ring)
+  const applyThemeAccent = useCallback((hex: string) => {
+    if (typeof window === "undefined" || !hex) return;
+    const root = document.documentElement;
+    root.style.setProperty("--primary", hex);
+    root.style.setProperty("--ring", hex);
+  }, []);
+
+  const setThemeAccent = (hex: string) => {
+    setThemeAccentState(hex);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`babi_theme_accent_${currentUser.id}`, hex);
+    }
+    applyThemeAccent(hex);
+  };
+
+  // Initialize theme mode and accent from localStorage on mount & on user change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Load theme mode
+    const savedMode = (localStorage.getItem("babi_theme_mode") as ThemeMode) || "dark";
+    setThemeModeState(savedMode);
+    applyThemeMode(savedMode);
+
+    // Load theme accent per user
+    const savedAccent =
+      localStorage.getItem(`babi_theme_accent_${currentUser.id}`) ||
+      currentUser.themeAccent ||
+      "#6366f1";
+    setThemeAccentState(savedAccent);
+    applyThemeAccent(savedAccent);
+
+    // System theme change listener
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleSystemChange = () => {
+      const currentSaved = localStorage.getItem("babi_theme_mode") as ThemeMode;
+      if (currentSaved === "system") {
+        applyThemeMode("system");
+      }
+    };
+    mediaQuery.addEventListener("change", handleSystemChange);
+    return () => mediaQuery.removeEventListener("change", handleSystemChange);
+  }, [currentUser.id, currentUser.themeAccent, applyThemeMode, applyThemeAccent]);
 
   const setCurrency = (c: CurrencyCode) => {
     setCurrencyState(c);
@@ -524,6 +606,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         currency,
         setCurrency,
+        themeMode,
+        setThemeMode,
+        toggleThemeMode,
+        themeAccent,
+        setThemeAccent,
         transactions,
         budgets,
         goals,

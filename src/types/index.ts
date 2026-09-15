@@ -8,6 +8,8 @@ export type RecurrenceFrequency = "weekly" | "monthly" | "yearly";
 
 export type CurrencyCode = "USD" | "EUR" | "GBP" | "PHP" | "JPY";
 
+export type ThemeMode = "dark" | "light" | "system";
+
 export type TransactionType = "expense" | "savings" | "income" | "settlement";
 
 export interface CurrencyConfig {

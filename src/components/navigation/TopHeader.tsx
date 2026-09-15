@@ -13,6 +13,8 @@ import {
   ChevronDown,
   User,
   Compass,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 export function TopHeader() {
@@ -20,6 +22,8 @@ export function TopHeader() {
     currentUser,
     currency,
     setCurrency,
+    themeMode,
+    toggleThemeMode,
     isOffline,
     pendingOfflineCount,
     lockSession,
@@ -122,6 +126,19 @@ export function TopHeader() {
               </div>
             )}
           </div>
+
+          {/* Quick Theme Toggle (Light / Dark) */}
+          <button
+            onClick={toggleThemeMode}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            title={themeMode === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {themeMode === "dark" ? (
+              <Sun className="w-4 h-4 text-amber-400 animate-in spin-in-90 duration-200" />
+            ) : (
+              <Moon className="w-4 h-4 text-indigo-600 animate-in spin-in-90 duration-200" />
+            )}
+          </button>
 
           {/* App Tour Guide */}
           <button

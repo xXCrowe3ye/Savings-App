@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
-import { X, Camera, Sparkles, Check, Palette, User, Loader2, Compass } from "lucide-react";
+import { X, Camera, Sparkles, Check, Palette, User, Loader2, Compass, Sun, Moon, Monitor } from "lucide-react";
+import { ThemeMode } from "@/types";
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -16,10 +17,21 @@ const THEME_ACCENTS = [
   { name: "Amber", hex: "#f59e0b" },
   { name: "Purple", hex: "#8b5cf6" },
   { name: "Emerald", hex: "#10b981" },
+  { name: "Sky Blue", hex: "#0284c7" },
+  { name: "Hot Fuchsia", hex: "#d946ef" },
+  { name: "Sunset Coral", hex: "#f97316" },
+  { name: "Slate", hex: "#475569" },
 ];
 
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
-  const { currentUser, updateProfile, refreshData } = useApp();
+  const {
+    currentUser,
+    updateProfile,
+    refreshData,
+    themeMode,
+    setThemeMode,
+    setThemeAccent: setGlobalThemeAccent,
+  } = useApp();
 
   const [nickname, setNickname] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -192,26 +204,86 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             />
           </div>
 
+          {/* Theme Mode (Night / Day / System) */}
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
+                <span>Display Appearance</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground capitalize">
+                {themeMode === "system" ? "Follows Device" : `${themeMode} mode`}
+              </span>
+            </label>
+            <div className="grid grid-cols-3 gap-2 p-1 bg-secondary/60 rounded-2xl border">
+              <button
+                type="button"
+                onClick={() => setThemeMode("light")}
+                className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all ${
+                  themeMode === "light"
+                    ? "bg-card text-foreground shadow-sm ring-1 ring-border"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Sun className="w-4 h-4 text-amber-500" />
+                <span>Day</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeMode("dark")}
+                className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all ${
+                  themeMode === "dark"
+                    ? "bg-card text-foreground shadow-sm ring-1 ring-border"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Moon className="w-4 h-4 text-indigo-400" />
+                <span>Night</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeMode("system")}
+                className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all ${
+                  themeMode === "system"
+                    ? "bg-card text-foreground shadow-sm ring-1 ring-border"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Monitor className="w-4 h-4 text-teal-400" />
+                <span>System</span>
+              </button>
+            </div>
+          </div>
+
           {/* Theme Accent Color */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-2 flex items-center gap-1">
-              <Palette className="w-3.5 h-3.5" />
-              <span>Partner Accent Color</span>
+            <label className="text-xs font-semibold text-muted-foreground block mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <Palette className="w-3.5 h-3.5" />
+                <span>Partner Theme Accent</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground">Personalized per user</span>
             </label>
-            <div className="grid grid-cols-6 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               {THEME_ACCENTS.map((color) => (
                 <button
                   type="button"
                   key={color.hex}
-                  onClick={() => setThemeAccent(color.hex)}
-                  className={`h-10 rounded-xl flex items-center justify-center transition-all ${
-                    themeAccent === color.hex
-                      ? "ring-2 ring-foreground ring-offset-2 scale-105 shadow-sm"
-                      : "hover:scale-105 opacity-80"
+                  onClick={() => {
+                    setThemeAccent(color.hex);
+                    setGlobalThemeAccent(color.hex);
+                  }}
+                  title={color.name}
+                  className={`h-9 rounded-xl flex items-center justify-center transition-all ${
+                    themeAccent.toLowerCase() === color.hex.toLowerCase()
+                      ? "ring-2 ring-foreground ring-offset-2 scale-105 shadow-md"
+                      : "hover:scale-105 opacity-85 hover:opacity-100"
                   }`}
                   style={{ backgroundColor: color.hex }}
                 >
-                  {themeAccent === color.hex && <Check className="w-4 h-4 text-white" />}
+                  {themeAccent.toLowerCase() === color.hex.toLowerCase() && (
+                    <Check className="w-4 h-4 text-white drop-shadow" />
+                  )}
                 </button>
               ))}
             </div>
