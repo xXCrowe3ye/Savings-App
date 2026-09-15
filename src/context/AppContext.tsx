@@ -13,6 +13,7 @@ import {
   PartnerKey,
 } from "@/types";
 import { queueOfflineTransaction, syncOfflineTransactions, getQueuedTransactions } from "@/lib/pwa/offlineQueue";
+import { isSupabaseConfigured, getSupabaseClient } from "@/lib/supabase/client";
 
 interface AppContextType {
   currentUser: UserProfile;
@@ -38,7 +39,7 @@ interface AppContextType {
   closeProfile: () => void;
   unlockWithPin: (pin: string) => Promise<boolean>;
   lockSession: () => void;
-  refreshData: () => Promise<void>;
+  refreshData: (isBackground?: boolean) => Promise<void>;
   logTransaction: (tx: Omit<Transaction, "id" | "createdAt">) => Promise<{ success: boolean; roundupSwept?: number }>;
   approveTransaction: (id: string) => Promise<void>;
   updateTransactionNotes: (id: string, notes: string) => Promise<void>;
@@ -119,9 +120,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (isBackground = false) => {
     try {
-      setIsLoading(true);
+      if (!isBackground) setIsLoading(true);
       const fetchOpts = { cache: "no-store" as RequestCache };
       const [meRes, txRes, bgRes, glRes, rcRes] = await Promise.all([
         fetch("/api/auth/me", fetchOpts),
@@ -174,9 +175,103 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.warn("Failed to fetch fresh data, might be offline:", err);
     } finally {
-      setIsLoading(false);
+      if (!isBackground) setIsLoading(false);
     }
   }, []);
+
+  // Broadcast cross-tab updates helper
+  const notifyDataChanged = useCallback(() => {
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        const bc = new BroadcastChannel("babi_savings_realtime");
+        bc.postMessage("data_updated");
+        bc.close();
+      }
+    } catch {}
+  }, []);
+
+  // 1. Live Background Polling & Visibility / Window Focus Synchronization
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Revalidate immediately on tab focus or screen un-minimize
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) {
+        refreshData(true);
+      }
+    };
+
+    window.addEventListener("focus", handleVisibilityOrFocus);
+    document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+
+    // Live background polling (every 4 seconds when tab is active/visible)
+    const pollTimer = setInterval(() => {
+      if (document.visibilityState === "visible" && navigator.onLine && isAuthenticated) {
+        refreshData(true);
+      }
+    }, 4000);
+
+    // Cross-tab BroadcastChannel listener
+    let bc: BroadcastChannel | null = null;
+    if ("BroadcastChannel" in window) {
+      bc = new BroadcastChannel("babi_savings_realtime");
+      bc.onmessage = (event) => {
+        if (event.data === "data_updated") {
+          refreshData(true);
+        }
+      };
+    }
+
+    return () => {
+      window.removeEventListener("focus", handleVisibilityOrFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+      clearInterval(pollTimer);
+      if (bc) bc.close();
+    };
+  }, [refreshData, isAuthenticated]);
+
+  // 2. Supabase Realtime WebSocket subscription (when Supabase credentials exist)
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !isAuthenticated) return;
+
+    try {
+      const client = getSupabaseClient();
+      const channel = client
+        .channel("couple_realtime_stream")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "transactions" },
+          () => refreshData(true)
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "budgets" },
+          () => refreshData(true)
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "goals" },
+          () => refreshData(true)
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "recurring_bills" },
+          () => refreshData(true)
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "settlements" },
+          () => refreshData(true)
+        )
+        .subscribe();
+
+      return () => {
+        client.removeChannel(channel);
+      };
+    } catch (err) {
+      console.warn("Supabase Realtime subscription error:", err);
+    }
+  }, [isAuthenticated, refreshData]);
 
   // Online / Offline listeners & background sync
   useEffect(() => {
@@ -321,6 +416,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         await refreshData();
+        notifyDataChanged();
         if (data.roundupSwept > 0 || txData.type === "savings") {
           triggerConfetti();
         }
@@ -342,6 +438,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         await refreshData();
+        notifyDataChanged();
         triggerConfetti();
       }
     } catch (err) {
@@ -358,6 +455,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         await refreshData();
+        notifyDataChanged();
       }
     } catch (err) {
       console.error("Failed to update notes:", err);
@@ -373,6 +471,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         await refreshData();
+        notifyDataChanged();
         triggerConfetti();
       }
     } catch (err) {
@@ -389,6 +488,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         await refreshData();
+        notifyDataChanged();
       }
     } catch (err) {
       console.error("Failed to toggle roundup:", err);
@@ -404,6 +504,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         await refreshData();
+        notifyDataChanged();
         triggerConfetti();
       }
     } catch (err) {
