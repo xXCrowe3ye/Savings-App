@@ -8,6 +8,7 @@ import { PinUnlockModal } from "@/components/auth/PinUnlockModal";
 import { RapidLogModal } from "@/components/transactions/RapidLogModal";
 import { LoginGate } from "@/components/auth/LoginGate";
 import { ProfileModal } from "@/components/profile/ProfileModal";
+import { FloatingGuideTour } from "@/components/navigation/FloatingGuideTour";
 import { Sparkles } from "lucide-react";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -45,6 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <MobileBottomNav onOpenQuickLog={() => setIsQuickLogOpen(true)} />
+      <FloatingGuideTour />
       <RapidLogModal isOpen={isQuickLogOpen} onClose={() => setIsQuickLogOpen(false)} />
       <ProfileModal isOpen={isProfileOpen} onClose={closeProfile} />
       <PinUnlockModal />

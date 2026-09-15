@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
-import { X, Camera, Sparkles, Check, Palette, User, Loader2 } from "lucide-react";
+import { X, Camera, Sparkles, Check, Palette, User, Loader2, Compass } from "lucide-react";
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -225,6 +225,21 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Save Changes</span>}
           </button>
+
+          {/* Re-run Tour Button */}
+          <div className="pt-2 border-t flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                window.dispatchEvent(new CustomEvent("open-app-tour", { detail: { tab: "tour" } }));
+              }}
+              className="text-xs text-primary font-semibold hover:underline flex items-center space-x-1.5 py-1"
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>Re-take App Tour & Guide</span>
+            </button>
+          </div>
         </form>
       </div>
     </div>

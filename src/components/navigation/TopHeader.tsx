@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronDown,
   User,
+  Compass,
 } from "lucide-react";
 
 export function TopHeader() {
@@ -121,6 +122,17 @@ export function TopHeader() {
               </div>
             )}
           </div>
+
+          {/* App Tour Guide */}
+          <button
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("open-app-tour", { detail: { tab: "tour" } }));
+            }}
+            className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+            title="Take App Tour & Guide"
+          >
+            <Compass className="w-4 h-4" />
+          </button>
 
           {/* Refresh Data */}
           <button
